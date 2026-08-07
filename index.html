@@ -1322,33 +1322,11 @@
           this.ctx = new (window.AudioContext || window.webkitAudioContext)();
         }
       }
-      playTone(freq, type = 'sine', duration = 0.1, gainVal = 0.05) {
-        try {
-          this.init();
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          osc.type = type;
-          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
-          osc.connect(gain);
-          gain.connect(this.ctx.destination);
-          osc.start();
-          osc.stop(this.ctx.currentTime + duration);
-        } catch(e) {}
-      }
-      click() { this.playTone(800, 'sine', 0.05, 0.03); }
-      transmit() {
-        this.playTone(440, 'triangle', 0.08, 0.05);
-        setTimeout(() => this.playTone(880, 'sine', 0.1, 0.04), 60);
-      }
-      toggle() {
-        this.playTone(300, 'sawtooth', 0.1, 0.04);
-        setTimeout(() => this.playTone(600, 'sine', 0.15, 0.05), 80);
-      }
-      error() {
-        this.playTone(150, 'sawtooth', 0.2, 0.08);
-      }
+      playTone() {}
+      click() {}
+      transmit() {}
+      toggle() {}
+      error() {}
     }
     const soundFx = new HUDAudioEngine();
   </script>
