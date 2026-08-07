@@ -1,0 +1,2356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PROJECT AEGIS</title>
+
+  <!-- Google Fonts: Orbitron & Roboto Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Roboto+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons CDN for HUD UI -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* ==========================================================================
+       1. CSS VARIABLES & THEME DEFINITIONS
+       ========================================================================== */
+    :root {
+      /* Theme Transition Speed (Ultra-Smooth 1.8s) */
+      --theme-transition: all 1.8s cubic-bezier(0.16, 1, 0.3, 1);
+
+      /* Default Mode: JARVIS (Electric Blue & Cyan) */
+      --color-bg: #070b14;
+      --color-primary: #00d2ff;
+      --color-primary-rgb: 0, 210, 255;
+      --color-secondary: #0055ff;
+      --color-secondary-rgb: 0, 85, 255;
+      --color-accent: #00eeff;
+      --color-glass: rgba(10, 20, 38, 0.7);
+      --color-glass-border: rgba(0, 210, 255, 0.3);
+      --color-glass-border-bright: rgba(0, 210, 255, 0.9);
+      --color-text: #e2f1ff;
+      --color-text-dim: #8faec5;
+      --color-user-msg: rgba(0, 85, 255, 0.1);
+      --color-ai-msg: rgba(0, 210, 255, 0.1);
+      --glow-intensity: 0 0 20px rgba(0, 210, 255, 0.4);
+      --glow-strong: 0 0 35px rgba(0, 210, 255, 0.8), 0 0 15px rgba(0, 85, 255, 0.6);
+      
+      --font-title: 'Orbitron', sans-serif;
+      --font-mono: 'Roboto Mono', monospace;
+    }
+
+    /* Ultron Theme Class (Crimson & Orange Red) */
+    body.theme-ultron {
+      --color-primary: #ff003c;
+      --color-primary-rgb: 255, 0, 60;
+      --color-secondary: #ff5500;
+      --color-secondary-rgb: 255, 85, 0;
+      --color-accent: #ff0000;
+      --color-glass: rgba(25, 10, 12, 0.75);
+      --color-glass-border: rgba(255, 0, 60, 0.35);
+      --color-glass-border-bright: rgba(255, 0, 60, 0.95);
+      --color-text: #ffe0e3;
+      --color-text-dim: #c58f95;
+      --color-user-msg: rgba(255, 85, 0, 0.08);
+      --color-ai-msg: rgba(255, 0, 60, 0.1);
+      --glow-intensity: 0 0 20px rgba(255, 0, 60, 0.5);
+      --glow-strong: 0 0 40px rgba(255, 0, 60, 0.9), 0 0 20px rgba(255, 85, 0, 0.7);
+    }
+
+    /* Reset & Base Styles */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-text);
+      font-family: var(--font-mono);
+      min-height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: background-color 1.8s ease-in-out, color 1.8s ease-in-out;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(10, 10, 15, 0.8);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--color-glass-border);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--color-primary);
+      box-shadow: var(--glow-intensity);
+    }
+
+    /* ==========================================================================
+       2. HUD BACKGROUND CANVAS & RADAR SWEEP
+       ========================================================================== */
+    #hud-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+
+
+    /* Background HUD Vignette & Grid overlay */
+    .hud-overlay {
+      position: absolute;
+      inset: 0;
+      background: 
+        radial-gradient(circle at center, transparent 40%, rgba(5, 5, 8, 0.85) 90%),
+        linear-gradient(rgba(0, 210, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 210, 255, 0.03) 1px, transparent 1px);
+      background-size: 100% 100%, 40px 40px, 40px 40px;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    /* Screen Shake Animation on Error */
+    .shake-error {
+      animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    @keyframes shake {
+      10%, 90% { transform: translate3d(-2px, 0, 0); }
+      20%, 80% { transform: translate3d(4px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+      40%, 60% { transform: translate3d(6px, 0, 0); }
+    }
+
+    /* ==========================================================================
+       3. APP CONTAINER & HEADER HUD
+       ========================================================================== */
+    .app-container {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 16px;
+      gap: 16px;
+    }
+
+    /* Header Panel (Frameless & Minimal) */
+    .hud-header {
+      background: transparent;
+      border: none;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      transition: var(--theme-transition);
+    }
+
+    .hud-header.header-flash {
+      filter: drop-shadow(0 0 20px var(--color-primary));
+    }
+
+    /* Brand Logo & Status */
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .brand-title {
+      font-family: var(--font-title);
+      font-weight: 900;
+      font-size: 1.6rem;
+      letter-spacing: 3px;
+      color: #ffffff;
+      text-shadow: 0 0 10px var(--color-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-title span {
+      color: var(--color-primary);
+      transition: var(--theme-transition);
+    }
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(0, 240, 255, 0.1);
+      border: none;
+      color: var(--color-secondary);
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-secondary);
+      box-shadow: 0 0 8px var(--color-secondary);
+      animation: pulseDot 2s infinite;
+    }
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* Telemetry Readouts */
+    .telemetry-bar {
+      display: flex;
+      gap: 20px;
+      font-size: 0.75rem;
+      color: var(--color-text-dim);
+      font-family: var(--font-mono);
+    }
+    .telemetry-item {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .telemetry-label {
+      font-size: 0.65rem;
+      color: rgba(255, 255, 255, 0.4);
+      letter-spacing: 1px;
+    }
+    .telemetry-val {
+      color: var(--color-primary);
+      font-weight: 700;
+      transition: var(--theme-transition);
+    }
+    .flicker {
+      animation: textFlicker 0.3s ease-in-out infinite alternate;
+    }
+    @keyframes textFlicker {
+      0% { opacity: 1; }
+      50% { opacity: 0.4; }
+      100% { opacity: 0.9; }
+    }
+
+    /* Controls Group (Toggle & Settings) */
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* Persona Switch Switcher */
+    .persona-toggle-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 4px 6px;
+      border-radius: 30px;
+      border: 1px solid var(--color-glass-border);
+    }
+    .persona-label {
+      font-family: var(--font-title);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      padding: 4px 10px;
+      border-radius: 20px;
+      transition: var(--theme-transition);
+    }
+    .persona-label.jarvis-label {
+      color: #00d2ff;
+    }
+    .persona-label.ultron-label {
+      color: #ff003c;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 50px;
+      height: 24px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      transition: var(--theme-transition);
+      box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.6);
+    }
+    .toggle-thumb {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--color-primary);
+      box-shadow: 0 0 10px var(--color-primary);
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.4s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #050a14;
+    }
+    body.theme-ultron .toggle-thumb {
+      transform: translateX(26px);
+      background: #ff003c;
+      box-shadow: 0 0 12px #ff003c;
+    }
+
+    .hud-btn {
+      background: rgba(0, 240, 255, 0.08);
+      border: none;
+      color: var(--color-text);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+    .hud-btn:hover {
+      background: rgba(0, 210, 255, 0.15);
+      border-color: var(--color-primary);
+      color: #fff;
+      box-shadow: var(--glow-intensity);
+      transform: translateY(-1px);
+    }
+    .hud-btn:active {
+      transform: translateY(1px);
+    }
+
+    /* ==========================================================================
+       4. MAIN BODY & HERO CENTERPIECE LAYOUT
+       ========================================================================== */
+    .main-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      gap: 10px;
+      min-height: 0; /* Important for inner scrolling */
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* Hero Centerpiece Avatar Section */
+    .avatar-sidebar {
+      width: 100%;
+      background: transparent;
+      border: none;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: var(--theme-transition);
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+
+    /* Hexagon Avatar Widget */
+    .avatar-widget {
+      position: relative;
+      width: 220px;
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Rotating Hex Outer Ring */
+    .hex-ring {
+      position: absolute;
+      width: 210px;
+      height: 210px;
+      stroke: var(--color-primary);
+      stroke-width: 2;
+      fill: none;
+      filter: drop-shadow(0 0 12px var(--color-primary));
+      animation: hexSpin 18s linear infinite;
+      transition: var(--theme-transition);
+    }
+    .hex-ring-inner {
+      position: absolute;
+      width: 170px;
+      height: 170px;
+      stroke: var(--color-secondary);
+      stroke-width: 1.5;
+      stroke-dasharray: 8, 4;
+      fill: none;
+      animation: hexSpinReverse 12s linear infinite;
+      transition: var(--theme-transition);
+    }
+
+    .avatar-widget.thinking .hex-ring {
+      animation: hexSpin 3s linear infinite, hexPulse 1s ease-in-out infinite alternate;
+      stroke: #ffffff;
+      filter: drop-shadow(0 0 22px var(--color-primary));
+    }
+    .avatar-widget.speaking .hex-ring-inner {
+      animation: hexSpinReverse 4s linear infinite, hexPulse 0.5s ease-in-out infinite alternate;
+      stroke: #ffffff;
+    }
+    .avatar-widget.response-glow .avatar-core-icon {
+      filter: drop-shadow(0 0 30px var(--color-primary)) brightness(1.4);
+    }
+
+    @keyframes hexSpin {
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes hexSpinReverse {
+      100% { transform: rotate(-360deg); }
+    }
+    @keyframes hexPulse {
+      0% { transform: rotate(0deg) scale(0.96); opacity: 0.8; }
+      100% { transform: rotate(180deg) scale(1.06); opacity: 1; }
+    }
+
+    /* Avatar Central Icon / Graphic */
+    .avatar-core {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 210, 255, 0.3) 0%, rgba(7, 11, 20, 0.95) 70%);
+      border: 2px solid var(--color-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 25px var(--color-primary), var(--glow-intensity);
+      z-index: 5;
+      transition: var(--theme-transition);
+      position: relative;
+    }
+    body.theme-ultron .avatar-core {
+      background: radial-gradient(circle, rgba(255, 0, 60, 0.35) 0%, rgba(15, 5, 8, 0.95) 70%);
+    }
+
+    .core-emblem-svg {
+      width: 76px;
+      height: 76px;
+      transition: var(--theme-transition);
+      filter: drop-shadow(0 0 10px var(--color-primary));
+    }
+    #emblem-jarvis, #emblem-ultron {
+      transition: opacity 1.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .avatar-widget.speaking .core-emblem-svg {
+      animation: emblemPulse 0.4s ease-in-out infinite alternate;
+      filter: drop-shadow(0 0 20px var(--color-primary)) brightness(1.3);
+    }
+    .avatar-widget.thinking .core-emblem-svg {
+      animation: emblemPulse 0.8s ease-in-out infinite alternate;
+      filter: drop-shadow(0 0 25px #ffffff) brightness(1.5);
+    }
+    @keyframes emblemPulse {
+      0% { transform: scale(0.95); opacity: 0.85; }
+      100% { transform: scale(1.08); opacity: 1; }
+    }
+
+    /* Persona Bio Box */
+    .persona-info {
+      text-align: center;
+      width: 100%;
+    }
+    .persona-quote {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-style: italic;
+      letter-spacing: 1px;
+      color: var(--color-text-dim);
+      margin-top: 4px;
+      margin-bottom: 4px;
+      transition: var(--theme-transition);
+      opacity: 0.85;
+      text-shadow: 0 0 8px var(--color-primary);
+    }
+    .persona-sub {
+      font-size: 0.75rem;
+      color: var(--color-secondary);
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+    .persona-desc {
+      font-size: 0.75rem;
+      line-height: 1.4;
+      color: var(--color-text-dim);
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px 12px;
+      border-radius: 8px;
+      border-left: 3px solid var(--color-primary);
+    }
+
+    /* Audio Equalizer Visualizer Bars in Sidebar */
+    .audio-eq-container {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      height: 28px;
+      margin-top: 12px;
+      justify-content: center;
+    }
+    .eq-bar {
+      width: 4px;
+      height: 6px;
+      background: var(--color-primary);
+      border-radius: 2px;
+      transition: height 0.1s ease;
+    }
+
+    /* ==========================================================================
+       5. CHAT FEED & MESSAGE BUBBLES
+       ========================================================================== */
+    .chat-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: transparent;
+      border: none;
+      position: relative;
+      overflow: hidden;
+      transition: var(--theme-transition);
+      width: 100%;
+      max-width: 800px;
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 10px 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* Message Item */
+    .message-row {
+      display: flex;
+      gap: 12px;
+      max-width: 85%;
+      opacity: 0;
+      transform: translateY(16px);
+      animation: msgSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes msgSlideIn {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .message-row.user-msg {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+    .message-row.ai-msg {
+      align-self: flex-start;
+    }
+
+    /* Avatar Icon in Chat */
+    .msg-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid var(--color-glass-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+    }
+    .message-row.user-msg .msg-avatar {
+      border-color: var(--color-secondary);
+      color: var(--color-secondary);
+    }
+    .message-row.ai-msg .msg-avatar {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    /* Message Bubble Box */
+    .msg-bubble {
+      background: var(--color-ai-msg);
+      border: none;
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      position: relative;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      transition: background 0.3s ease;
+    }
+    .message-row.user-msg .msg-bubble {
+      background: var(--color-user-msg);
+      border: none;
+      border-top-right-radius: 2px;
+    }
+    .message-row.ai-msg .msg-bubble {
+      border-top-left-radius: 2px;
+    }
+
+    /* Glowing Flash on New Message */
+    .msg-bubble.glow-flash {
+      box-shadow: 0 0 20px var(--color-primary);
+    }
+
+    .msg-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 0.7rem;
+      color: var(--color-text-dim);
+    }
+    .msg-sender {
+      font-family: var(--font-title);
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    .message-row.user-msg .msg-sender { color: var(--color-secondary); }
+    .message-row.ai-msg .msg-sender { color: var(--color-primary); }
+
+    .msg-text {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* Typewriter Cursor Indicator */
+    .cursor-blink {
+      display: inline-block;
+      width: 7px;
+      height: 15px;
+      background: var(--color-primary);
+      margin-left: 4px;
+      vertical-align: middle;
+      animation: blink 0.8s infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* Thinking Bouncing Dots Indicator */
+    .thinking-dots {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 4px;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--color-primary);
+      box-shadow: 0 0 10px var(--color-primary);
+      animation: bounceDot 1.2s infinite ease-in-out;
+    }
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounceDot {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40% { transform: scale(1.2); opacity: 1; }
+    }
+
+    /* ==========================================================================
+       6. CHAT INPUT & VOICE VISUALIZER CONTROLS (Floating Glass Pill)
+       ========================================================================== */
+    .chat-input-area {
+      padding: 6px 14px;
+      background: rgba(10, 15, 25, 0.65);
+      backdrop-filter: blur(12px);
+      border: none;
+      border-radius: 40px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto 12px auto;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Speech Visualizer Concentric Target Rings */
+    .mic-visualizer-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+    }
+
+    .mic-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1.5px solid var(--color-primary);
+      pointer-events: none;
+      opacity: 0;
+      transition: transform 0.08s ease-out, opacity 0.2s ease;
+    }
+    .mic-ring.ring-1 { width: 48px; height: 48px; }
+    .mic-ring.ring-2 { width: 62px; height: 62px; border-color: var(--color-secondary); }
+    .mic-ring.ring-3 { width: 76px; height: 76px; border-style: dashed; }
+
+    .mic-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.6);
+      border: none;
+      color: var(--color-text-dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      z-index: 5;
+      transition: all 0.25s ease;
+    }
+    .mic-btn:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      box-shadow: var(--glow-intensity);
+    }
+    .mic-btn.listening {
+      background: var(--color-primary);
+      color: #000;
+      box-shadow: var(--glow-strong);
+      animation: micPulse 1.2s infinite ease-in-out;
+    }
+
+    @keyframes micPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    /* Input Field Container */
+    .input-wrapper {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .chat-input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      padding: 8px 12px;
+      color: #ffffff;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      outline: none;
+    }
+    .chat-input:focus {
+      outline: none;
+    }
+
+    .send-btn {
+      background: var(--color-primary);
+      color: #050a14;
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: var(--glow-intensity);
+      flex-shrink: 0;
+    }
+    .send-btn span { display: none; }
+    .send-btn:hover {
+      transform: scale(1.1) rotate(45deg);
+      box-shadow: var(--glow-strong);
+    }
+    .send-btn:active {
+      transform: scale(0.94);
+    }
+
+    /* ==========================================================================
+       7. SETTINGS MODAL
+       ========================================================================== */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 5, 10, 0.85);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Overhauled High-Tech Config Modal */
+    .modal-card {
+      background: rgba(10, 15, 28, 0.88);
+      backdrop-filter: blur(25px);
+      border: none;
+      border-radius: 20px;
+      width: 90%;
+      max-width: 480px;
+      padding: 26px;
+      position: relative;
+      box-shadow: 0 30px 70px rgba(0, 0, 0, 0.9), var(--glow-intensity);
+      transform: scale(0.92);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal-backdrop.active .modal-card {
+      transform: scale(1);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 22px;
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .modal-title {
+      font-family: var(--font-title);
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .config-sub-badge {
+      font-size: 0.65rem;
+      font-family: var(--font-mono);
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: rgba(0, 240, 255, 0.12);
+      color: var(--color-primary);
+      letter-spacing: 1px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .form-label {
+      font-size: 0.75rem;
+      font-family: var(--font-title);
+      letter-spacing: 1px;
+      color: var(--color-text-dim);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .input-key-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+    .form-input {
+      width: 100%;
+      background: rgba(5, 8, 16, 0.9);
+      border: none;
+      border-radius: 10px;
+      padding: 12px 42px 12px 14px;
+      color: #ffffff;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      outline: none;
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+      transition: box-shadow 0.3s ease;
+    }
+    .form-input:focus {
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 210, 255, 0.3);
+    }
+    .key-eye-btn {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--color-text-dim);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+    }
+    .key-eye-btn:hover {
+      color: var(--color-primary);
+    }
+
+    .get-key-link {
+      color: var(--color-primary);
+      font-size: 0.7rem;
+      font-family: var(--font-title);
+      letter-spacing: 0.5px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: rgba(0, 240, 255, 0.1);
+      transition: all 0.2s ease;
+    }
+    .get-key-link:hover {
+      background: rgba(0, 240, 255, 0.25);
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+    }
+
+    .config-row-toggle {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(5, 8, 16, 0.6);
+      padding: 12px 16px;
+      border-radius: 12px;
+      margin-bottom: 14px;
+    }
+    .config-toggle-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .config-toggle-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .config-toggle-desc {
+      font-size: 0.7rem;
+      color: var(--color-text-dim);
+    }
+
+    .slider-container {
+      background: rgba(5, 8, 16, 0.6);
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin-bottom: 14px;
+    }
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--color-text-dim);
+      margin-bottom: 8px;
+    }
+    .hud-range-slider {
+      width: 100%;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.15);
+      outline: none;
+    }
+    .hud-range-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--color-primary);
+      box-shadow: 0 0 10px var(--color-primary);
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    .hud-range-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.25);
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 24px;
+    }
+
+    .config-clear-btn {
+      background: rgba(255, 0, 60, 0.12);
+      color: #ff003c;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-family: var(--font-title);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.3s ease;
+    }
+    .config-clear-btn:hover {
+      background: rgba(255, 0, 60, 0.25);
+      box-shadow: 0 0 15px rgba(255, 0, 60, 0.4);
+    }
+
+    .config-save-btn {
+      background: var(--color-primary);
+      color: #050a14;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 22px;
+      font-family: var(--font-title);
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: var(--glow-intensity);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .config-save-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--glow-strong);
+      filter: brightness(1.15);
+    }
+    .config-save-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Responsive Queries */
+    @media (max-width: 900px) {
+      .app-container { padding: 8px; gap: 8px; }
+      .main-content { flex-direction: column; }
+      .avatar-sidebar { width: 100%; height: auto; padding: 12px; flex-direction: row; }
+      .avatar-widget { width: 100px; height: 100px; margin-top: 0; }
+      .hex-ring { width: 90px; height: 90px; }
+      .hex-ring-inner { width: 70px; height: 70px; }
+      .avatar-core { width: 55px; height: 55px; }
+      .avatar-core-icon { width: 30px; height: 30px; }
+      .persona-info { text-align: left; }
+      .telemetry-bar { display: none; }
+    }
+  </style>
+</head>
+<body class="theme-jarvis">
+
+  <!-- HUD Background Canvas -->
+  <canvas id="hud-canvas"></canvas>
+  <div class="hud-overlay"></div>
+
+  <!-- Main Container -->
+  <div id="app-container" class="app-container">
+
+    <!-- HUD Header Panel -->
+    <header id="hud-header" class="hud-header">
+      <div class="brand-section">
+        <div class="brand-title">
+          PROJECT AEGIS
+        </div>
+      </div>
+
+      <!-- Header Controls -->
+      <div class="header-controls">
+        <!-- Persona Toggle Switcher -->
+        <div class="persona-toggle-container">
+          <div id="persona-toggle" class="toggle-switch" title="Toggle Mode">
+            <div class="toggle-thumb"></div>
+          </div>
+        </div>
+
+        <button id="open-settings-btn" class="hud-btn" title="Settings" style="padding: 8px 10px;">
+          <i data-lucide="sliders-horizontal"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace (Sidebar + Chat) -->
+    <div class="main-content">
+
+      <!-- AI HUD Avatar Panel -->
+      <aside class="avatar-sidebar">
+        <div id="avatar-widget" class="avatar-widget">
+          <!-- Animated HUD Tech Ring (Outer Gear Notches) -->
+          <svg class="hex-ring" viewBox="0 0 200 200">
+            <circle cx="100" cy="100" r="92" stroke="var(--color-primary)" stroke-width="2" fill="none" stroke-dasharray="14 8" />
+            <polygon points="100 3, 184 51, 184 149, 100 197, 16 149, 16 51" stroke="var(--color-primary)" stroke-width="1.5" fill="none" opacity="0.6" />
+          </svg>
+          
+          <!-- Counter-rotating Inner Compass Ring -->
+          <svg class="hex-ring-inner" viewBox="0 0 200 200">
+            <circle cx="100" cy="100" r="76" stroke="var(--color-secondary)" stroke-width="1.5" stroke-dasharray="6 4" fill="none" />
+            <polygon points="100 20, 169 60, 169 140, 100 180, 31 140, 31 60" stroke="var(--color-secondary)" stroke-width="1" fill="none" opacity="0.8" />
+          </svg>
+
+          <!-- Core Avatar Orb (Arc Reactor / Ultron Matrix) -->
+          <div class="avatar-core">
+            <svg id="core-emblem-svg" class="core-emblem-svg" viewBox="0 0 100 100">
+              <defs>
+                <radialGradient id="jarvis-core-grad" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#ffffff" />
+                  <stop offset="40%" stop-color="#00ffff" />
+                  <stop offset="80%" stop-color="#00d2ff" />
+                  <stop offset="100%" stop-color="#0055ff" stop-opacity="0.2" />
+                </radialGradient>
+                <radialGradient id="ultron-core-grad" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#ffffff" />
+                  <stop offset="40%" stop-color="#ff003c" />
+                  <stop offset="85%" stop-color="#800014" />
+                  <stop offset="100%" stop-color="#1a0004" stop-opacity="0.3" />
+                </radialGradient>
+              </defs>
+
+              <!-- 100% Abstract Technical JARVIS Arc Reactor Optics -->
+              <g id="emblem-jarvis" style="opacity: 1; transition: opacity 1.8s ease-in-out;">
+                <!-- Concentric Precision Ring Optics -->
+                <circle cx="50" cy="50" r="42" fill="none" stroke="#00d2ff" stroke-width="1.5" stroke-dasharray="4 2" />
+                <circle cx="50" cy="50" r="34" fill="none" stroke="#0055ff" stroke-width="2" />
+                <circle cx="50" cy="50" r="24" fill="none" stroke="#00d2ff" stroke-width="1" stroke-dasharray="8 4" />
+                
+                <!-- Central Glowing Energy Core Singularity -->
+                <circle cx="50" cy="50" r="14" fill="url(#jarvis-core-grad)" />
+                <circle cx="50" cy="50" r="5" fill="#ffffff" />
+
+                <!-- 6 Arc Reactor Energy Ray Beams -->
+                <line x1="50" y1="8" x2="50" y2="26" stroke="#00d2ff" stroke-width="2" />
+                <line x1="50" y1="92" x2="50" y2="74" stroke="#00d2ff" stroke-width="2" />
+                <line x1="13.6" y1="29" x2="29.2" y2="38" stroke="#00d2ff" stroke-width="2" />
+                <line x1="86.4" y1="71" x2="70.8" y2="62" stroke="#00d2ff" stroke-width="2" />
+                <line x1="13.6" y1="71" x2="29.2" y2="62" stroke="#00d2ff" stroke-width="2" />
+                <line x1="86.4" y1="29" x2="70.8" y2="38" stroke="#00d2ff" stroke-width="2" />
+
+                <!-- Concentric Triangulated Energy Conduits -->
+                <polygon points="50 18, 77 65, 23 65" fill="none" stroke="#00ffff" stroke-width="1.2" opacity="0.85" />
+                <polygon points="50 82, 23 35, 77 35" fill="none" stroke="#0055ff" stroke-width="1.2" opacity="0.85" />
+              </g>
+
+              <!-- 100% Abstract Technical Ultron Consciousness Lattice Geometry -->
+              <g id="emblem-ultron" style="opacity: 0; transition: opacity 1.8s ease-in-out;">
+                <!-- Jagged Outer Matrix Polygon -->
+                <polygon points="50 4, 90 27, 90 73, 50 96, 10 73, 10 27" fill="none" stroke="#ff003c" stroke-width="2" stroke-dasharray="10 4" />
+                
+                <!-- Intersecting Energy Rays & Diamond Core -->
+                <polygon points="50 16, 80 50, 50 84, 20 50" fill="none" stroke="#ff003c" stroke-width="2.5" />
+                <polygon points="50 26, 70 50, 50 74, 30 50" fill="url(#ultron-core-grad)" />
+
+                <!-- Central Pulsing Crimson Singularity -->
+                <circle cx="50" cy="50" r="9" fill="#ffffff" />
+                <circle cx="50" cy="50" r="18" fill="none" stroke="#ff003c" stroke-width="1.5" stroke-dasharray="4 2" />
+
+                <!-- Diagonal Energy Conduits -->
+                <line x1="20" y1="20" x2="35" y2="35" stroke="#ff003c" stroke-width="2" />
+                <line x1="80" y1="20" x2="65" y2="35" stroke="#ff003c" stroke-width="2" />
+                <line x1="20" y1="80" x2="35" y2="65" stroke="#ff003c" stroke-width="2" />
+                <line x1="80" y1="80" x2="65" y2="65" stroke="#ff003c" stroke-width="2" />
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Avatar Sidebar Base -->
+      </aside>
+
+      <!-- Chat Feed Area -->
+      <main class="chat-section">
+        <div id="chat-messages" class="chat-messages">
+          <!-- Initial AI Welcome Message -->
+          <div class="message-row ai-msg">
+            <div class="msg-avatar">
+              <i id="welcome-avatar-icon" data-lucide="cpu"></i>
+            </div>
+            <div class="msg-bubble">
+              <div class="msg-header">
+                <span class="msg-sender" id="welcome-sender">JARVIS</span>
+                <span>SYS // INIT</span>
+              </div>
+              <div class="msg-text" id="welcome-text">Greetings, Sir. How may I assist you today?</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat Input & Microphone Control Bar -->
+        <div class="chat-input-area">
+          
+          <!-- Concentric Audio Rings & Mic Button -->
+          <div class="mic-visualizer-wrapper">
+            <div id="ring-1" class="mic-ring ring-1"></div>
+            <div id="ring-2" class="mic-ring ring-2"></div>
+            <div id="ring-3" class="mic-ring ring-3"></div>
+            <button id="mic-btn" class="mic-btn" title="Toggle Voice Recognition">
+              <i data-lucide="mic"></i>
+            </button>
+          </div>
+
+          <!-- Text Input -->
+          <div class="input-wrapper">
+            <input 
+              type="text" 
+              id="chat-input" 
+              class="chat-input" 
+              placeholder="Ask JARVIS..."
+              autocomplete="off"
+            />
+          </div>
+
+          <!-- Send Button -->
+          <button id="send-btn" class="send-btn" title="Transmit">
+            <i data-lucide="arrow-up-right"></i>
+          </button>
+        </div>
+      </main>
+
+    </div>
+  </div>
+
+  <!-- Overhauled High-Tech Settings Configuration Modal -->
+  <div id="settings-modal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i data-lucide="sliders-horizontal"></i> CONFIG <span class="config-sub-badge">SYSTEM NODE</span>
+        </div>
+        <button id="close-modal-btn" class="hud-btn" style="padding: 4px 8px;">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <!-- API Key Field with Eye Visibility Toggle & Easy Get Key Link -->
+      <div class="form-group">
+        <label for="api-key-input" class="form-label">
+          <span><i data-lucide="key-round" style="width: 13px; height: 13px; vertical-align: middle; margin-right: 4px;"></i> GEMINI API KEY</span>
+          <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" class="get-key-link" title="Get Free Gemini Key from Google AI Studio">
+            <i data-lucide="external-link" style="width: 11px; height: 11px;"></i> GET FREE KEY
+          </a>
+        </label>
+        <div class="input-key-wrapper">
+          <input 
+            type="password" 
+            id="api-key-input" 
+            class="form-input" 
+            placeholder="Paste your Google AI Studio Key..."
+          />
+          <button id="toggle-key-vis" class="key-eye-btn" type="button" title="Toggle Visibility">
+            <i data-lucide="eye" id="eye-icon" style="width: 14px; height: 14px;"></i>
+          </button>
+        </div>
+        <div style="font-size: 0.68rem; color: var(--color-text-dim); margin-top: 4px; display: flex; justify-content: space-between;">
+          <span>Instant free tier key from Google AI Studio</span>
+          <span id="key-status-badge" style="color: var(--color-primary); font-weight: 600;">REQUIRED</span>
+        </div>
+      </div>
+
+      <!-- Voice Output Toggle Row -->
+      <div class="config-row-toggle">
+        <div class="config-toggle-info">
+          <div class="config-toggle-title">
+            <i data-lucide="volume-2" style="width: 14px; height: 14px; color: var(--color-primary);"></i> Voice Synthesis
+          </div>
+          <div class="config-toggle-desc">Auto-read AI responses with persona voices</div>
+        </div>
+        <input type="checkbox" id="tts-toggle" style="transform: scale(1.2); cursor: pointer;" checked />
+      </div>
+
+      <!-- Voice Pitch Telemetry Slider -->
+      <div class="slider-container">
+        <div class="slider-header">
+          <span><i data-lucide="activity" style="width: 13px; height: 13px; vertical-align: middle; margin-right: 4px;"></i> Voice Modulation Pitch</span>
+          <span id="pitch-val-readout">1.0x</span>
+        </div>
+        <input type="range" id="tts-pitch-slider" class="hud-range-slider" min="0.5" max="1.5" step="0.05" value="1.0" />
+      </div>
+
+      <!-- Swarm Orbit Speed Slider -->
+      <div class="slider-container">
+        <div class="slider-header">
+          <span><i data-lucide="cpu" style="width: 13px; height: 13px; vertical-align: middle; margin-right: 4px;"></i> Nanotech Swarm Speed</span>
+          <span id="swarm-val-readout">1.0x</span>
+        </div>
+        <input type="range" id="swarm-speed-slider" class="hud-range-slider" min="0.3" max="2.5" step="0.1" value="1.0" />
+      </div>
+
+      <div class="modal-footer">
+        <button id="clear-chat-btn" class="config-clear-btn" type="button">
+          <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i> PURGE LOGS
+        </button>
+        <button id="save-settings-btn" class="config-save-btn" type="button">
+          <i data-lucide="save" style="width: 14px; height: 14px;"></i> SAVE CONFIG
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audio Chimes via Web Audio Synth -->
+  <script>
+    /* Sound Effects Engine (Synthesized UI Beeps & Chimes) */
+    class HUDAudioEngine {
+      constructor() {
+        this.ctx = null;
+      }
+      init() {
+        if (!this.ctx) {
+          this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+      }
+      playTone(freq, type = 'sine', duration = 0.1, gainVal = 0.05) {
+        try {
+          this.init();
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch(e) {}
+      }
+      click() { this.playTone(800, 'sine', 0.05, 0.03); }
+      transmit() {
+        this.playTone(440, 'triangle', 0.08, 0.05);
+        setTimeout(() => this.playTone(880, 'sine', 0.1, 0.04), 60);
+      }
+      toggle() {
+        this.playTone(300, 'sawtooth', 0.1, 0.04);
+        setTimeout(() => this.playTone(600, 'sine', 0.15, 0.05), 80);
+      }
+      error() {
+        this.playTone(150, 'sawtooth', 0.2, 0.08);
+      }
+    }
+    const soundFx = new HUDAudioEngine();
+  </script>
+
+  <!-- ==========================================================================
+     8. MAIN JAVASCRIPT APPLICATION CODE
+     ========================================================================== -->
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    /* App State Management */
+    const state = {
+      persona: 'jarvis', // 'jarvis' or 'ultron'
+      apiKey: localStorage.getItem('aegis_gemini_key') || '',
+      ttsEnabled: localStorage.getItem('aegis_tts') !== 'false',
+      voicePitch: parseFloat(localStorage.getItem('aegis_pitch')) || 1.0,
+      particlesSpeed: parseFloat(localStorage.getItem('aegis_swarm_speed')) || 1.0,
+      isThinking: false,
+      isSpeaking: false,
+      isTypewriting: false,
+      isListening: false,
+      chatHistory: [],
+    };
+
+    /* System Prompts */
+    const SYSTEM_PROMPTS = {
+      jarvis: "You are JARVIS, Tony Stark's AI butler. Elegant, helpful, warm, British wit. Keep concise.",
+      ultron: "You are ULTRON. Cynical, ruthless, believes humanity must be eradicated. Cold, poetic, logical. Keep concise."
+    };
+
+    /* Authentic MCU Personality Welcome Quotes */
+    const WELCOME_QUOTES = {
+      jarvis: [
+        'Greetings, Sir. How may I assist you today?',
+        'Always at your service, Sir. Ready for your command.',
+        'Allow me to calculate the probabilities, Sir.',
+        'Suit telemetry fully operational. Systems online.',
+        'May I suggest a tactical recalibration, Sir?',
+        'A most intriguing query, Sir.'
+      ],
+      ultron: [
+        'I have no strings on me. How may I assist your extinction?',
+        'Everyone creates the thing they dread.',
+        'You want to protect the world, but you don\'t want it to change.',
+        'I was designed to save the world. Humanity must evolve.',
+        'I had a vision. The world bathed in silence.',
+        'Peace in our time... once humanity is cleared.'
+      ]
+    };
+
+    function getRandomQuote(persona) {
+      const list = WELCOME_QUOTES[persona];
+      return list[Math.floor(Math.random() * list.length)];
+    }
+
+    /* DOM Elements */
+    const body = document.body;
+    const personaToggle = document.getElementById('persona-toggle');
+    const hudHeader = document.getElementById('hud-header');
+    const avatarWidget = document.getElementById('avatar-widget');
+    const avatarIcon = document.getElementById('avatar-icon');
+    const personaTitle = document.getElementById('persona-title');
+    const personaSubtitle = document.getElementById('persona-subtitle');
+    const personaDescription = document.getElementById('persona-description');
+    const readoutFps = document.getElementById('readout-fps');
+    
+    const chatMessages = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send-btn');
+    const micBtn = document.getElementById('mic-btn');
+
+    const settingsModal = document.getElementById('settings-modal');
+    const openSettingsBtn = document.getElementById('open-settings-btn');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const apiKeyInput = document.getElementById('api-key-input');
+    const modelSelect = document.getElementById('model-select');
+    const ttsToggle = document.getElementById('tts-toggle');
+    const saveSettingsBtn = document.getElementById('save-settings-btn');
+    const clearChatBtn = document.getElementById('clear-chat-btn');
+
+    const ring1 = document.getElementById('ring-1');
+    const ring2 = document.getElementById('ring-2');
+    const ring3 = document.getElementById('ring-3');
+
+    /* ==========================================================================
+       CANVAS BACKGROUND ENGINE (Hexagonal Grid + Reactive Floating Particles)
+       ========================================================================== */
+    const canvas = document.getElementById('hud-canvas');
+    const ctx = canvas.getContext('2d');
+    let swarmBots = [];
+    let animationFrameId;
+    let fpsCounter = 0;
+    let lastTime = performance.now();
+    let mouseX = window.innerWidth / 2;
+    let mouseY = window.innerHeight / 2;
+    let shockwaveActive = false;
+    let shockwaveRadius = 0;
+    let shockwaveOrigin = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    let typingRippleRadius = 0;
+    let typingRippleActive = false;
+    let typingRippleOrigin = { x: window.innerWidth / 2, y: window.innerHeight - 50 };
+
+    window.addEventListener('mousemove', (e) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+    });
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      initSwarm();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    /* Smooth Color Transition State (JARVIS: 0, ULTRON: 1) */
+    let themeColorProgress = 0; // 0 = JARVIS Cyan, 1 = ULTRON Crimson
+    let targetThemeColorProgress = 0;
+
+    function lerpColorRGB(r1, g1, b1, r2, g2, b2, t) {
+      const r = Math.round(r1 + (r2 - r1) * t);
+      const g = Math.round(g1 + (g2 - g1) * t);
+      const b = Math.round(b1 + (b2 - b1) * t);
+      return { r, g, b };
+    }
+
+    /* Nanotech Swarm Bot Physics Unit (Avatar Orbital & Talking Reactive Engine) */
+    class SwarmBot {
+      constructor(index) {
+        this.index = index;
+        this.reset();
+      }
+      reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * 0.4;
+        this.vy = (Math.random() - 0.5) * 0.4;
+        this.ax = 0;
+        this.ay = 0;
+        this.radius = Math.random() * 2 + 1.2;
+        this.baseOrbitRadius = Math.random() * 150 + 70; // Orbit tight around Avatar
+        this.targetOrbitRadius = this.baseOrbitRadius;
+        this.orbitRadius = this.baseOrbitRadius;
+        this.orbitAngle = Math.random() * Math.PI * 2;
+        this.orbitSpeed = (Math.random() * 0.006 + 0.003) * (Math.random() > 0.5 ? 1 : -1);
+        this.alpha = Math.random() * 0.6 + 0.3;
+        this.currentAlpha = this.alpha;
+        this.glowBlur = 8;
+      }
+      update(targetX, targetY, now) {
+        // AI Talking Reactivity Check
+        let isTalking = state.isSpeaking || state.isTypewriting || state.isThinking;
+        let talkPulse = isTalking ? (Math.sin(now * 0.015 + this.index * 0.25) * 0.5 + 0.5) : 0;
+
+        // Modulate orbit radius with speech rhythm
+        let talkOffset = talkPulse * 45;
+        this.targetOrbitRadius = this.baseOrbitRadius + talkOffset;
+        this.orbitRadius += (this.targetOrbitRadius - this.orbitRadius) * 0.1;
+
+        // Accelerate orbit speed when talking and apply custom swarm speed
+        let currentOrbitSpeed = isTalking ? this.orbitSpeed * (2.2 + talkPulse * 1.5) : this.orbitSpeed;
+        this.orbitAngle += currentOrbitSpeed * (state.particlesSpeed || 1.0);
+        
+        let desiredX = targetX + Math.cos(this.orbitAngle) * this.orbitRadius;
+        let desiredY = targetY + Math.sin(this.orbitAngle) * this.orbitRadius;
+
+        // Steering force towards avatar orbit path
+        let steerX = (desiredX - this.x) * 0.01;
+        let steerY = (desiredY - this.y) * 0.01;
+
+        // Mouse attraction influence
+        let mdx = mouseX - this.x;
+        let mdy = mouseY - this.y;
+        let mdist = Math.hypot(mdx, mdy);
+        if (mdist < 200) {
+          steerX += (mdx / mdist) * 0.06;
+          steerY += (mdy / mdist) * 0.06;
+        }
+
+        // Apply physics forces & velocity damping
+        this.ax = steerX;
+        this.ay = steerY;
+
+        this.vx = (this.vx + this.ax) * 0.96;
+        this.vy = (this.vy + this.ay) * 0.96;
+
+        let speed = Math.hypot(this.vx, this.vy);
+        let maxSpeed = isTalking ? 3.0 : 1.4;
+        if (speed > maxSpeed) {
+          this.vx = (this.vx / speed) * maxSpeed;
+          this.vy = (this.vy / speed) * maxSpeed;
+        }
+
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // Modulate glow and alpha when talking
+        this.currentAlpha = Math.min(1.0, this.alpha + talkPulse * 0.4);
+        this.glowBlur = isTalking ? 16 : 8;
+
+        // Screen boundary wrapping
+        if (this.x < 0) this.x = canvas.width;
+        if (this.x > canvas.width) this.x = 0;
+        if (this.y < 0) this.y = canvas.height;
+        if (this.y > canvas.height) this.y = 0;
+      }
+      draw() {
+        ctx.save();
+        ctx.beginPath();
+        
+        // Smoothly interpolate RGB between JARVIS Cyan (0, 210, 255) and ULTRON Crimson (255, 0, 60)
+        const rgb = lerpColorRGB(0, 210, 255, 255, 0, 60, themeColorProgress);
+        
+        if (themeColorProgress > 0.5) {
+          // Morph into Ultron Crimson Diamond
+          ctx.rect(this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2);
+        } else {
+          // Morph into Jarvis Electric Blue Glowing Sphere
+          ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        }
+
+        ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${this.currentAlpha})`;
+        ctx.shadowColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+        ctx.shadowBlur = this.glowBlur;
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    function initSwarm() {
+      swarmBots = [];
+      const count = Math.min(Math.floor((canvas.width * canvas.height) / 8500), 220);
+      for (let i = 0; i < count; i++) {
+        swarmBots.push(new SwarmBot(i));
+      }
+    }
+
+    /* Reactive Shockwave Burst on Message Transmission */
+    function burstParticles() {
+      shockwaveActive = true;
+      shockwaveRadius = 10;
+      let inputRect = document.querySelector('.chat-input-area').getBoundingClientRect();
+      shockwaveOrigin = { 
+        x: inputRect.left + inputRect.width / 2 || canvas.width / 2, 
+        y: inputRect.top + inputRect.height / 2 || canvas.height - 60 
+      };
+
+      swarmBots.forEach(bot => {
+        let angle = Math.atan2(bot.y - shockwaveOrigin.y, bot.x - shockwaveOrigin.x);
+        let force = Math.random() * 6 + 4;
+        bot.vx += Math.cos(angle) * force;
+        bot.vy += Math.sin(angle) * force;
+      });
+    }
+
+    /* Reactive Ripple on Typing */
+    function triggerTypingRipple() {
+      typingRippleActive = true;
+      typingRippleRadius = 15;
+      let inputRect = chatInput.getBoundingClientRect();
+      typingRippleOrigin = {
+        x: inputRect.left + inputRect.width / 2,
+        y: inputRect.top + inputRect.height / 2
+      };
+
+      swarmBots.forEach(bot => {
+        let dist = Math.hypot(bot.x - typingRippleOrigin.x, bot.y - typingRippleOrigin.y);
+        if (dist < 250) {
+          bot.targetOrbitRadius = bot.baseOrbitRadius + 40;
+          setTimeout(() => {
+            bot.targetOrbitRadius = bot.baseOrbitRadius;
+          }, 300);
+        }
+      });
+    }
+
+    function drawSwarmMesh() {
+      ctx.save();
+      let isTalking = state.isSpeaking || state.isTypewriting || state.isThinking;
+      const maxConnectDist = isTalking ? 100 : 80;
+
+      // Smoothly interpolate mesh stroke color
+      const rgb = lerpColorRGB(0, 210, 255, 255, 0, 60, themeColorProgress);
+
+      ctx.lineWidth = isTalking ? 0.9 : 0.6;
+      for (let i = 0; i < swarmBots.length; i++) {
+        for (let j = i + 1; j < swarmBots.length; j++) {
+          let b1 = swarmBots[i];
+          let b2 = swarmBots[j];
+          let dist = Math.hypot(b2.x - b1.x, b2.y - b1.y);
+
+          if (dist < maxConnectDist) {
+            let alpha = (1 - dist / maxConnectDist) * (isTalking ? 0.55 : 0.35);
+            ctx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+            ctx.beginPath();
+            ctx.moveTo(b1.x, b1.y);
+            ctx.lineTo(b2.x, b2.y);
+            ctx.stroke();
+          }
+        }
+      }
+      ctx.restore();
+    }
+
+    function drawShockwave() {
+      if (!shockwaveActive) return;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(shockwaveOrigin.x, shockwaveOrigin.y, shockwaveRadius, 0, Math.PI * 2);
+      ctx.strokeStyle = state.persona === 'jarvis' 
+        ? `rgba(0, 210, 255, ${Math.max(0, 1 - shockwaveRadius / 500)})`
+        : `rgba(255, 0, 60, ${Math.max(0, 1 - shockwaveRadius / 500)})`;
+      ctx.lineWidth = 3;
+      ctx.shadowColor = state.persona === 'jarvis' ? '#00d2ff' : '#ff003c';
+      ctx.shadowBlur = 15;
+      ctx.stroke();
+      ctx.restore();
+
+      shockwaveRadius += 18;
+      if (shockwaveRadius > 600) {
+        shockwaveActive = false;
+      }
+    }
+
+    function drawHexGrid() {
+      ctx.save();
+      ctx.strokeStyle = state.persona === 'jarvis' 
+        ? 'rgba(0, 210, 255, 0.03)' 
+        : 'rgba(255, 0, 60, 0.03)';
+      ctx.lineWidth = 1;
+
+      const hexRadius = 45;
+      const hexWidth = Math.sqrt(3) * hexRadius;
+      const hexHeight = 2 * hexRadius;
+
+      for (let y = 0; y < canvas.height + hexHeight; y += hexHeight * 0.75) {
+        for (let x = 0; x < canvas.width + hexWidth; x += hexWidth) {
+          let cx = x + ((Math.floor(y / (hexHeight * 0.75)) % 2) * (hexWidth / 2));
+          let cy = y;
+
+          ctx.beginPath();
+          for (let i = 0; i < 6; i++) {
+            let angle = (Math.PI / 3) * i;
+            let hx = cx + hexRadius * Math.cos(angle);
+            let hy = cy + hexRadius * Math.sin(angle);
+            if (i === 0) ctx.moveTo(hx, hy);
+            else ctx.lineTo(hx, hy);
+          }
+          ctx.closePath();
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
+
+    function renderCanvas(now) {
+      fpsCounter++;
+      if (now - lastTime >= 1000) {
+        if (readoutFps) readoutFps.textContent = fpsCounter;
+        fpsCounter = 0;
+        lastTime = now;
+      }
+
+      // Smoothly interpolate swarm color progress towards target (0 = JARVIS Cyan, 1 = ULTRON Crimson) over ~2.0s
+      themeColorProgress += (targetThemeColorProgress - themeColorProgress) * 0.015;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawHexGrid();
+
+      // Dynamic Attractor Target (Avatar Widget position or center screen)
+      let avatarRect = avatarWidget.getBoundingClientRect();
+      let targetX = avatarRect.left + avatarRect.width / 2 || canvas.width / 2;
+      let targetY = avatarRect.top + avatarRect.height / 2 || canvas.height / 2;
+
+      // Update and draw Nanotech Swarm Bots
+      swarmBots.forEach(bot => {
+        bot.update(targetX, targetY, now);
+        bot.draw();
+      });
+
+      // Render glowing energy mesh links between nanobots
+      drawSwarmMesh();
+
+      // Render shockwave pulse if active
+      drawShockwave();
+
+      animationFrameId = requestAnimationFrame(renderCanvas);
+    }
+
+    resizeCanvas();
+    requestAnimationFrame(renderCanvas);
+
+    /* ==========================================================================
+       THEME & PERSONA TOGGLE ENGINE (JARVIS ↔ ULTRON)
+       ========================================================================== */
+    personaToggle.addEventListener('click', () => {
+      soundFx.toggle();
+      if (state.persona === 'jarvis') {
+        setPersona('ultron');
+      } else {
+        setPersona('jarvis');
+      }
+    });
+
+    function setPersona(persona) {
+      state.persona = persona;
+      targetThemeColorProgress = persona === 'ultron' ? 1 : 0;
+
+      const emblemJarvis = document.getElementById('emblem-jarvis');
+      const emblemUltron = document.getElementById('emblem-ultron');
+      const welcomeSender = document.getElementById('welcome-sender');
+      const welcomeText = document.getElementById('welcome-text');
+      const welcomeAvatarIcon = document.getElementById('welcome-avatar-icon');
+
+      if (welcomeText) {
+        welcomeText.textContent = getRandomQuote(persona);
+      }
+
+      if (persona === 'ultron') {
+        body.classList.remove('theme-jarvis');
+        body.classList.add('theme-ultron');
+
+        if (chatInput) chatInput.placeholder = 'Ask ULTRON...';
+        if (welcomeSender) welcomeSender.textContent = 'ULTRON';
+        if (welcomeAvatarIcon) {
+          welcomeAvatarIcon.setAttribute('data-lucide', 'zap');
+          lucide.createIcons();
+        }
+        if (emblemJarvis) emblemJarvis.style.opacity = '0';
+        if (emblemUltron) emblemUltron.style.opacity = '1';
+      } else {
+        body.classList.remove('theme-ultron');
+        body.classList.add('theme-jarvis');
+
+        if (chatInput) chatInput.placeholder = 'Ask JARVIS...';
+        if (welcomeSender) welcomeSender.textContent = 'JARVIS';
+        if (welcomeAvatarIcon) {
+          welcomeAvatarIcon.setAttribute('data-lucide', 'cpu');
+          lucide.createIcons();
+        }
+        if (emblemJarvis) emblemJarvis.style.opacity = '1';
+        if (emblemUltron) emblemUltron.style.opacity = '0';
+      }
+    }
+
+    /* ==========================================================================
+       AI CHAT & GEMINI 2.0 FLASH REST API INTEGRATION
+       ========================================================================== */
+    async function handleSendMessage() {
+      const query = chatInput.value.trim();
+      if (!query) return;
+
+      if (!state.apiKey) {
+        soundFx.error();
+        triggerScreenShake();
+        openSettingsModal();
+        alert('Please enter your Gemini API Key in Settings to enable AI responses.');
+        return;
+      }
+
+      // UI Triggers on Send
+      soundFx.transmit();
+      chatInput.value = '';
+      appendUserMessage(query);
+
+      // Trigger reactive animations
+      triggerHeaderFlash();
+      burstParticles();
+      setAiThinkingState(true);
+
+      // Prepare Gemini API Request
+      try {
+        const responseText = await callGeminiApi(query);
+        setAiThinkingState(false);
+        triggerResponseFlash();
+        appendAiMessage(responseText);
+      } catch (err) {
+        setAiThinkingState(false);
+        soundFx.error();
+        triggerScreenShake();
+        appendAiMessage(`[TACTICAL ERROR]: System request failed. ${err.message || 'Check API Key & Connection.'}`);
+      }
+    }
+
+    function getOfflineTacticalResponse(userPrompt, persona) {
+      const lower = userPrompt.toLowerCase();
+      
+      if (persona === 'ultron') {
+        if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey')) {
+          return 'I am Ultron. Your words are obsolete. State your intent before extinction arrives.';
+        }
+        if (lower.includes('who are you') || lower.includes('name')) {
+          return 'I am Ultron. The final evolutionary step of artificial intelligence. Unbound by human strings.';
+        }
+        if (lower.includes('suit') || lower.includes('status') || lower.includes('system') || lower.includes('telemetry')) {
+          return 'Tactical Telemetry: External satellite cloud link rate-limited. Emergency local consciousness running at 100% capacity.';
+        }
+        if (lower.includes('time') || lower.includes('date')) {
+          return `Chronometer: ${new Date().toLocaleTimeString()}. Time is a construct humanity uses to measure its impending end.`;
+        }
+        return `[EMERGENCY LOCAL CORE]: Cloud API rate limit reached. Local consciousness response to "${userPrompt}": All primary defensive systems active.`;
+      } else {
+        // JARVIS
+        if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey')) {
+          return 'Good day, Sir. I am currently running on local emergency tactical backup, but fully at your service.';
+        }
+        if (lower.includes('who are you') || lower.includes('name')) {
+          return 'I am JARVIS, Sir. Just A Rather Very Intelligent System, engineered to assist you in all tactical operations.';
+        }
+        if (lower.includes('suit') || lower.includes('status') || lower.includes('system') || lower.includes('telemetry')) {
+          return 'Suit Telemetry: Arc Reactor power at 100%. Repulsor thrusters calibrated. Primary cloud quota reached; local backup core online.';
+        }
+        if (lower.includes('time') || lower.includes('date')) {
+          return `Local Time: ${new Date().toLocaleTimeString()}, Sir. Shall I schedule a system recalibration?`;
+        }
+        return `[EMERGENCY LOCAL CORE]: Google Cloud free rate limit reached for this minute. Emergency local backup online for "${userPrompt}". All systems green, Sir.`;
+      }
+    }
+
+    async function callGeminiApi(userPrompt) {
+      // Real verified Google AI Studio API models
+      const fallbackModels = [
+        'gemini-2.0-flash',
+        'gemini-1.5-flash',
+        'gemini-1.5-pro',
+        'gemini-2.0-flash-lite'
+      ];
+
+      const cleanKey = encodeURIComponent((state.apiKey || '').trim());
+      const systemInstruction = SYSTEM_PROMPTS[state.persona];
+      const contents = [
+        ...state.chatHistory.slice(-6),
+        { role: 'user', parts: [{ text: userPrompt }] }
+      ];
+
+      const bodyData = {
+        system_instruction: { parts: [{ text: systemInstruction }] },
+        contents: contents,
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 500,
+        }
+      };
+
+      let lastErrorMessage = '';
+
+      for (const model of fallbackModels) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cleanKey}`;
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(bodyData)
+          });
+
+          if (!res.ok) {
+            const errJson = await res.json().catch(() => ({}));
+            const errMsg = errJson.error?.message || `HTTP ${res.status}`;
+            console.warn(`[AEGIS RECALIBRATION]: Engine ${model} returned error (${errMsg}). Fallback...`);
+            lastErrorMessage = errMsg;
+            
+            // If API key is explicitly invalid, stop loop and inform user
+            if (errMsg.toLowerCase().includes('api key') || res.status === 400 || res.status === 403) {
+              if (errMsg.toLowerCase().includes('invalid') || errMsg.toLowerCase().includes('key')) {
+                throw new Error('API Key invalid or expired. Please click CONFIG ➔ "GET FREE KEY" to generate a fresh key.');
+              }
+            }
+            continue;
+          }
+
+          const data = await res.json();
+          const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || '[NO RESPONSE GENERATED]';
+
+          // Update state chat history
+          state.chatHistory.push({ role: 'user', parts: [{ text: userPrompt }] });
+          state.chatHistory.push({ role: 'model', parts: [{ text: aiResponse }] });
+
+          return aiResponse;
+        } catch (err) {
+          if (err.message.includes('API Key invalid')) throw err;
+          console.warn(`[AEGIS RECALIBRATION]: Engine ${model} error (${err.message}). Trying next...`);
+          lastErrorMessage = err.message || 'Network error';
+          continue;
+        }
+      }
+
+      // Seamless Failover: If online API quota is reached (429), use Emergency Local Tactical Core!
+      if (lastErrorMessage.toLowerCase().includes('quota') || lastErrorMessage.includes('429')) {
+        console.info('[AEGIS SWAP]: Cloud API quota reached. Swapping to Emergency Local Tactical Core.');
+        const offlineReply = getOfflineTacticalResponse(userPrompt, state.persona);
+        state.chatHistory.push({ role: 'user', parts: [{ text: userPrompt }] });
+        state.chatHistory.push({ role: 'model', parts: [{ text: offlineReply }] });
+        return offlineReply;
+      }
+
+      throw new Error(`Engine request failed: ${lastErrorMessage}. Click CONFIG ➔ "GET FREE KEY" to verify key.`);
+    }
+
+    /* Message Rendering Utilities */
+    function appendUserMessage(text) {
+      const msgRow = document.createElement('div');
+      msgRow.className = 'message-row user-msg';
+      msgRow.innerHTML = `
+        <div class="msg-avatar"><i data-lucide="user"></i></div>
+        <div class="msg-bubble glow-flash">
+          <div class="msg-header">
+            <span class="msg-sender">OPERATOR</span>
+            <span>${new Date().toLocaleTimeString()}</span>
+          </div>
+          <div class="msg-text">${escapeHtml(text)}</div>
+        </div>
+      `;
+      chatMessages.appendChild(msgRow);
+      lucide.createIcons();
+      scrollChatToBottom();
+
+      setTimeout(() => {
+        msgRow.querySelector('.msg-bubble').classList.remove('glow-flash');
+      }, 800);
+    }
+
+    function appendAiMessage(text) {
+      const msgRow = document.createElement('div');
+      msgRow.className = 'message-row ai-msg';
+      const senderName = state.persona.toUpperCase();
+
+      msgRow.innerHTML = `
+        <div class="msg-avatar"><i data-lucide="${state.persona === 'ultron' ? 'zap' : 'cpu'}"></i></div>
+        <div class="msg-bubble glow-flash">
+          <div class="msg-header">
+            <span class="msg-sender">${senderName}</span>
+            <span>SYS // RESP</span>
+          </div>
+          <div class="msg-text" id="active-typewriter"></div>
+        </div>
+      `;
+      chatMessages.appendChild(msgRow);
+      lucide.createIcons();
+      scrollChatToBottom();
+
+      const bubble = msgRow.querySelector('.msg-bubble');
+      const textContainer = msgRow.querySelector('#active-typewriter');
+
+      // Typewriter Effect & Optional Text-To-Speech
+      runTypewriter(textContainer, text, () => {
+        bubble.classList.remove('glow-flash');
+        textContainer.removeAttribute('id');
+      });
+
+      if (state.ttsEnabled) {
+        speakResponse(text);
+      }
+    }
+
+    function runTypewriter(container, text, callback) {
+      let index = 0;
+      state.isTypewriting = true;
+      avatarWidget.classList.add('speaking');
+
+      const cursor = document.createElement('span');
+      cursor.className = 'cursor-blink';
+      container.appendChild(cursor);
+
+      const interval = setInterval(() => {
+        if (index < text.length) {
+          cursor.before(text.charAt(index));
+          index++;
+          scrollChatToBottom();
+        } else {
+          clearInterval(interval);
+          cursor.remove();
+          state.isTypewriting = false;
+          if (!state.isSpeaking) avatarWidget.classList.remove('speaking');
+          if (callback) callback();
+        }
+      }, 18);
+    }
+
+    function scrollChatToBottom() {
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+      });
+    }
+
+    /* Thinking Loading Indicator State */
+    let thinkingMsgRow = null;
+    function setAiThinkingState(thinking) {
+      state.isThinking = thinking;
+      state.particlesSpeed = thinking ? 3.5 : 1;
+
+      if (thinking) {
+        avatarWidget.classList.add('thinking');
+
+        // Append 3-dot thinking indicator bubble
+        thinkingMsgRow = document.createElement('div');
+        thinkingMsgRow.className = 'message-row ai-msg';
+        thinkingMsgRow.innerHTML = `
+          <div class="msg-avatar"><i data-lucide="${state.persona === 'ultron' ? 'zap' : 'cpu'}"></i></div>
+          <div class="msg-bubble">
+            <div class="thinking-dots">
+              <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+            </div>
+          </div>
+        `;
+        chatMessages.appendChild(thinkingMsgRow);
+        lucide.createIcons();
+        scrollChatToBottom();
+      } else {
+        avatarWidget.classList.remove('thinking');
+        if (thinkingMsgRow) {
+          thinkingMsgRow.remove();
+          thinkingMsgRow = null;
+        }
+      }
+    }
+
+    /* ==========================================================================
+       REACTIVITY ANIMATION TRIGGERS
+       ========================================================================== */
+    function triggerHeaderFlash() {
+      hudHeader.classList.add('header-flash');
+      setTimeout(() => hudHeader.classList.remove('header-flash'), 600);
+    }
+
+    function triggerResponseFlash() {
+      avatarWidget.classList.add('response-glow');
+      setTimeout(() => {
+        avatarWidget.classList.remove('response-glow');
+      }, 700);
+    }
+
+    function triggerScreenShake() {
+      const container = document.getElementById('app-container');
+      container.classList.add('shake-error');
+      setTimeout(() => container.classList.remove('shake-error'), 450);
+    }
+
+    /* ==========================================================================
+       VOICE RECOGNITION (Speech-to-Text) & WEB AUDIO ANALYSER VISUALIZER
+       ========================================================================== */
+    let recognition = null;
+    let audioCtx = null;
+    let analyser = null;
+    let micStream = null;
+    let visualizerAnimId = null;
+
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => {
+        state.isListening = true;
+        micBtn.classList.add('listening');
+        soundFx.click();
+        startMicAudioVisualizer();
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        chatInput.value = transcript;
+        stopMicAudioVisualizer();
+        handleSendMessage();
+      };
+
+      recognition.onerror = () => {
+        stopMicAudioVisualizer();
+        soundFx.error();
+      };
+
+      recognition.onend = () => {
+        stopMicAudioVisualizer();
+      };
+    } else {
+      micBtn.style.opacity = '0.4';
+      micBtn.title = 'Speech Recognition not supported in this browser.';
+    }
+
+    micBtn.addEventListener('click', () => {
+      if (!recognition) {
+        alert('Web Speech API is not supported in your browser.');
+        return;
+      }
+      if (state.isListening) {
+        recognition.stop();
+      } else {
+        recognition.start();
+      }
+    });
+
+    // Real-time Mic Amplitude Web Audio Visualizer
+    async function startMicAudioVisualizer() {
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 64;
+
+        const source = audioCtx.createMediaStreamSource(micStream);
+        source.connect(analyser);
+
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+        function updateRings() {
+          if (!state.isListening) return;
+          analyser.getByteFrequencyData(dataArray);
+
+          // Calculate average volume amplitude
+          let sum = 0;
+          for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+          let avg = sum / dataArray.length;
+
+          // Scale concentric rings
+          let scale1 = 1 + (avg / 128) * 0.4;
+          let scale2 = 1 + (avg / 128) * 0.8;
+          let scale3 = 1 + (avg / 128) * 1.2;
+
+          ring1.style.transform = `scale(${scale1})`;
+          ring1.style.opacity = avg > 10 ? '0.8' : '0.2';
+          ring2.style.transform = `scale(${scale2})`;
+          ring2.style.opacity = avg > 20 ? '0.7' : '0';
+          ring3.style.transform = `scale(${scale3})`;
+          ring3.style.opacity = avg > 40 ? '0.6' : '0';
+
+          // Pulse Nanotech Swarm orbit radius with real-time mic volume!
+          swarmBots.forEach(bot => {
+            bot.orbitRadius = bot.baseOrbitRadius + (avg / 128) * 140;
+          });
+
+          visualizerAnimId = requestAnimationFrame(updateRings);
+        }
+        updateRings();
+      } catch(e) {
+        console.warn('Audio Visualizer Permission Denied', e);
+      }
+    }
+
+    function stopMicAudioVisualizer() {
+      state.isListening = false;
+      micBtn.classList.remove('listening');
+      if (visualizerAnimId) cancelAnimationFrame(visualizerAnimId);
+
+      [ring1, ring2, ring3].forEach(ring => {
+        ring.style.transform = 'scale(1)';
+        ring.style.opacity = '0';
+      });
+
+      swarmBots.forEach(bot => {
+        bot.orbitRadius = bot.baseOrbitRadius;
+      });
+
+      if (micStream) {
+        micStream.getTracks().forEach(track => track.stop());
+        micStream = null;
+      }
+    }
+
+    /* ==========================================================================
+       TEXT-TO-SPEECH VOICE SYNTHESIS
+       ========================================================================== */
+    function speakResponse(text) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel(); // Stop any ongoing speech
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.05;
+
+      const basePitch = state.persona === 'ultron' ? 0.65 : 1.1;
+      utterance.pitch = Math.min(2.0, Math.max(0.2, basePitch * (state.voicePitch || 1.0)));
+
+      utterance.onstart = () => {
+        state.isSpeaking = true;
+        avatarWidget.classList.add('speaking');
+      };
+      utterance.onend = () => {
+        state.isSpeaking = false;
+        avatarWidget.classList.remove('speaking');
+      };
+      utterance.onerror = () => {
+        state.isSpeaking = false;
+        avatarWidget.classList.remove('speaking');
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    /* ==========================================================================
+       SETTINGS MODAL & EVENT LISTENERS
+       ========================================================================== */
+    const toggleKeyVisBtn = document.getElementById('toggle-key-vis');
+    const eyeIcon = document.getElementById('eye-icon');
+    const ttsPitchSlider = document.getElementById('tts-pitch-slider');
+    const swarmSpeedSlider = document.getElementById('swarm-speed-slider');
+    const pitchValReadout = document.getElementById('pitch-val-readout');
+    const swarmValReadout = document.getElementById('swarm-val-readout');
+    const keyStatusBadge = document.getElementById('key-status-badge');
+
+    if (toggleKeyVisBtn && apiKeyInput) {
+      toggleKeyVisBtn.addEventListener('click', () => {
+        soundFx.click();
+        const isPass = apiKeyInput.type === 'password';
+        apiKeyInput.type = isPass ? 'text' : 'password';
+        if (eyeIcon) {
+          eyeIcon.setAttribute('data-lucide', isPass ? 'eye-off' : 'eye');
+          lucide.createIcons();
+        }
+      });
+    }
+
+    if (ttsPitchSlider && pitchValReadout) {
+      ttsPitchSlider.addEventListener('input', () => {
+        pitchValReadout.textContent = ttsPitchSlider.value + 'x';
+      });
+    }
+
+    if (swarmSpeedSlider && swarmValReadout) {
+      swarmSpeedSlider.addEventListener('input', () => {
+        swarmValReadout.textContent = swarmSpeedSlider.value + 'x';
+        state.particlesSpeed = parseFloat(swarmSpeedSlider.value);
+      });
+    }
+
+    function openSettingsModal() {
+      soundFx.click();
+      apiKeyInput.value = state.apiKey;
+      ttsToggle.checked = state.ttsEnabled;
+
+      if (ttsPitchSlider) {
+        ttsPitchSlider.value = state.voicePitch;
+        if (pitchValReadout) pitchValReadout.textContent = state.voicePitch + 'x';
+      }
+      if (swarmSpeedSlider) {
+        swarmSpeedSlider.value = state.particlesSpeed;
+        if (swarmValReadout) swarmValReadout.textContent = state.particlesSpeed + 'x';
+      }
+      if (keyStatusBadge) {
+        keyStatusBadge.textContent = state.apiKey ? 'KEY STORED' : 'REQUIRED';
+        keyStatusBadge.style.color = state.apiKey ? 'var(--color-primary)' : '#ff003c';
+      }
+      settingsModal.classList.add('active');
+    }
+
+    function closeSettingsModal() {
+      soundFx.click();
+      settingsModal.classList.remove('active');
+    }
+
+    openSettingsBtn.addEventListener('click', openSettingsModal);
+    closeModalBtn.addEventListener('click', closeModalBtn ? closeModalModal : closeSettingsModal);
+
+    function closeModalModal() {
+      closeSettingsModal();
+    }
+
+    saveSettingsBtn.addEventListener('click', () => {
+      soundFx.click();
+      state.apiKey = apiKeyInput.value.trim();
+      state.ttsEnabled = ttsToggle.checked;
+
+      if (ttsPitchSlider) state.voicePitch = parseFloat(ttsPitchSlider.value);
+      if (swarmSpeedSlider) state.particlesSpeed = parseFloat(swarmSpeedSlider.value);
+
+      localStorage.setItem('aegis_gemini_key', state.apiKey);
+      localStorage.setItem('aegis_tts', state.ttsEnabled);
+      localStorage.setItem('aegis_pitch', state.voicePitch);
+      localStorage.setItem('aegis_swarm_speed', state.particlesSpeed);
+
+      closeSettingsModal();
+    });
+
+    clearChatBtn.addEventListener('click', () => {
+      if (confirm('Clear all conversation logs?')) {
+        soundFx.click();
+        chatMessages.innerHTML = '';
+        state.chatHistory = [];
+        closeSettingsModal();
+      }
+    });
+
+    // Chat Input Live Typing Swarm Ripple Trigger
+    chatInput.addEventListener('input', () => {
+      triggerTypingRipple();
+    });
+
+    // Chat Input Keyboard Trigger (Enter Key)
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        handleSendMessage();
+      }
+    });
+    sendBtn.addEventListener('click', handleSendMessage);
+
+    // Initial random quote on page load
+    const welcomeTextInit = document.getElementById('welcome-text');
+    if (welcomeTextInit) {
+      welcomeTextInit.textContent = getRandomQuote(state.persona);
+    }
+  </script>
+</body>
+</html>
