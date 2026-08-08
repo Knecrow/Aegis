@@ -14,4 +14,4 @@
       toggle() {}
       error() {}
     }
-    const soundFx = new HUDAudioEngine();
+    export const soundFx = new HUDAudioEngine();

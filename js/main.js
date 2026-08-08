@@ -1,3 +1,5 @@
+import { soundFx } from './audio.js';
+
 // Initialize Lucide Icons
     lucide.createIcons();
 
