@@ -1,7 +1,17 @@
 import { soundFx } from './audio.js';
 
-// Initialize Lucide Icons
-    lucide.createIcons();
+function safeCreateIcons() {
+  if (window.lucide && typeof window.lucide.createIcons === 'function') {
+    window.lucide.createIcons();
+  }
+}
+
+// Initialize Lucide Icons safely
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', safeCreateIcons);
+} else {
+  safeCreateIcons();
+}
 
     /* App State Management */
     const state = {
@@ -418,7 +428,7 @@ import { soundFx } from './audio.js';
         if (welcomeSender) welcomeSender.textContent = 'ULTRON';
         if (welcomeAvatarIcon) {
           welcomeAvatarIcon.setAttribute('data-lucide', 'zap');
-          lucide.createIcons();
+          safeCreateIcons();
         }
         if (emblemJarvis) emblemJarvis.style.opacity = '0';
         if (emblemUltron) emblemUltron.style.opacity = '1';
@@ -430,7 +440,7 @@ import { soundFx } from './audio.js';
         if (welcomeSender) welcomeSender.textContent = 'JARVIS';
         if (welcomeAvatarIcon) {
           welcomeAvatarIcon.setAttribute('data-lucide', 'cpu');
-          lucide.createIcons();
+          safeCreateIcons();
         }
         if (emblemJarvis) emblemJarvis.style.opacity = '1';
         if (emblemUltron) emblemUltron.style.opacity = '0';
@@ -605,7 +615,7 @@ import { soundFx } from './audio.js';
         </div>
       `;
       chatMessages.appendChild(msgRow);
-      lucide.createIcons();
+      safeCreateIcons();
       scrollChatToBottom();
 
       setTimeout(() => {
@@ -629,7 +639,7 @@ import { soundFx } from './audio.js';
         </div>
       `;
       chatMessages.appendChild(msgRow);
-      lucide.createIcons();
+      safeCreateIcons();
       scrollChatToBottom();
 
       const bubble = msgRow.querySelector('.msg-bubble');
@@ -701,7 +711,7 @@ import { soundFx } from './audio.js';
           </div>
         `;
         chatMessages.appendChild(thinkingMsgRow);
-        lucide.createIcons();
+        safeCreateIcons();
         scrollChatToBottom();
       } else {
         avatarWidget.classList.remove('thinking');
@@ -901,7 +911,7 @@ import { soundFx } from './audio.js';
         apiKeyInput.type = isPass ? 'text' : 'password';
         if (eyeIcon) {
           eyeIcon.setAttribute('data-lucide', isPass ? 'eye-off' : 'eye');
-          lucide.createIcons();
+          safeCreateIcons();
         }
       });
     }
