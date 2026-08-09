@@ -596,28 +596,22 @@ if (document.readyState === 'loading') {
       throw new Error(`Engine request failed: ${lastErrorMessage}. Click CONFIG ➔ "GET FREE KEY" to verify key.`);
     }
 
-    /* Ultra-Minimal Sci-Fi Avatar SVG Generators */
+    /* Pure Circle Sci-Fi Avatar SVG Generators */
     function getPersonaAvatarSVG(persona) {
       if (persona === 'ultron') {
         return `
-          <svg class="chat-avatar-svg ultron-avatar" viewBox="0 0 32 32" width="28" height="28">
-            <polygon points="16 3, 29 16, 16 29, 3 16" fill="none" stroke="#ff003c" stroke-width="1.5" />
-            <circle cx="16" cy="16" r="3.5" fill="#ff003c" />
-            <circle cx="16" cy="16" r="1.5" fill="#ffffff" />
-            <line x1="9" y1="13" x2="23" y2="13" stroke="#ff003c" stroke-width="1" opacity="0.7" />
-            <line x1="11" y1="19" x2="21" y2="19" stroke="#ff003c" stroke-width="1" opacity="0.7" />
+          <svg class="chat-avatar-svg ultron-avatar" viewBox="0 0 24 24" width="24" height="24">
+            <circle cx="12" cy="12" r="7" fill="#ff003c" opacity="0.25" />
+            <circle cx="12" cy="12" r="7" fill="none" stroke="#ff003c" stroke-width="2" />
+            <circle cx="12" cy="12" r="3" fill="#ffffff" />
           </svg>
         `;
       } else {
         return `
-          <svg class="chat-avatar-svg jarvis-avatar" viewBox="0 0 32 32" width="28" height="28">
-            <circle cx="16" cy="16" r="12" fill="none" stroke="#00f0ff" stroke-width="1.5" />
-            <circle cx="16" cy="16" r="4" fill="#00f0ff" />
-            <circle cx="16" cy="16" r="1.5" fill="#ffffff" />
-            <line x1="16" y1="2" x2="16" y2="5" stroke="#00f0ff" stroke-width="1.5" stroke-linecap="round" />
-            <line x1="16" y1="27" x2="16" y2="30" stroke="#00f0ff" stroke-width="1.5" stroke-linecap="round" />
-            <line x1="2" y1="16" x2="5" y2="16" stroke="#00f0ff" stroke-width="1.5" stroke-linecap="round" />
-            <line x1="27" y1="16" x2="30" y2="16" stroke="#00f0ff" stroke-width="1.5" stroke-linecap="round" />
+          <svg class="chat-avatar-svg jarvis-avatar" viewBox="0 0 24 24" width="24" height="24">
+            <circle cx="12" cy="12" r="7" fill="#00f0ff" opacity="0.25" />
+            <circle cx="12" cy="12" r="7" fill="none" stroke="#00f0ff" stroke-width="2" />
+            <circle cx="12" cy="12" r="3" fill="#ffffff" />
           </svg>
         `;
       }
@@ -625,10 +619,10 @@ if (document.readyState === 'loading') {
 
     function getUserAvatarSVG() {
       return `
-        <svg class="chat-avatar-svg user-avatar" viewBox="0 0 32 32" width="28" height="28">
-          <circle cx="16" cy="16" r="12" fill="none" stroke="var(--color-secondary)" stroke-width="1.5" />
-          <circle cx="16" cy="12" r="3" fill="var(--color-secondary)" />
-          <path d="M 8 24 C 8 20, 12 18, 16 18 C 20 18, 24 20, 24 24" fill="none" stroke="var(--color-secondary)" stroke-width="1.5" stroke-linecap="round" />
+        <svg class="chat-avatar-svg user-avatar" viewBox="0 0 24 24" width="24" height="24">
+          <circle cx="12" cy="12" r="7" fill="var(--color-secondary)" opacity="0.25" />
+          <circle cx="12" cy="12" r="7" fill="none" stroke="var(--color-secondary)" stroke-width="2" />
+          <circle cx="12" cy="12" r="3" fill="#ffffff" />
         </svg>
       `;
     }
