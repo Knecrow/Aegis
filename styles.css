@@ -555,24 +555,50 @@
 
     /* Avatar Icon in Chat */
     .msg-avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      background: rgba(0, 0, 0, 0.6);
-      border: 1px solid var(--color-glass-border);
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(5, 12, 24, 0.85);
+      border: 1.5px solid var(--color-glass-border);
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.6), inset 0 0 8px rgba(0, 210, 255, 0.15);
+      transition: var(--theme-transition);
+      position: relative;
+      overflow: hidden;
     }
     .message-row.user-msg .msg-avatar {
-      border-color: var(--color-secondary);
-      color: var(--color-secondary);
+      border-color: rgba(0, 85, 255, 0.6);
+      box-shadow: 0 0 12px rgba(0, 85, 255, 0.3);
     }
     .message-row.ai-msg .msg-avatar {
       border-color: var(--color-primary);
-      color: var(--color-primary);
+      box-shadow: 0 0 14px var(--glow-intensity);
+    }
+    body.theme-ultron .message-row.ai-msg .msg-avatar {
+      border-color: #ff003c;
+      box-shadow: 0 0 14px rgba(255, 0, 60, 0.45);
+    }
+
+    .chat-avatar-svg {
+      width: 32px;
+      height: 32px;
+      display: block;
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.3s ease;
+    }
+    .msg-avatar:hover .chat-avatar-svg {
+      transform: scale(1.12) rotate(6deg);
+    }
+    .jarvis-avatar {
+      filter: drop-shadow(0 0 6px rgba(0, 210, 255, 0.8));
+    }
+    .ultron-avatar {
+      filter: drop-shadow(0 0 6px rgba(255, 0, 60, 0.9));
+    }
+    .user-avatar {
+      filter: drop-shadow(0 0 4px var(--color-secondary));
     }
 
     /* Message Bubble Box */

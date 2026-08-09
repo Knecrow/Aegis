@@ -414,10 +414,14 @@ if (document.readyState === 'loading') {
       const emblemUltron = document.getElementById('emblem-ultron');
       const welcomeSender = document.getElementById('welcome-sender');
       const welcomeText = document.getElementById('welcome-text');
-      const welcomeAvatarIcon = document.getElementById('welcome-avatar-icon');
+      const welcomeMsgAvatar = document.getElementById('welcome-msg-avatar');
 
       if (welcomeText) {
         welcomeText.textContent = getRandomQuote(persona);
+      }
+
+      if (welcomeMsgAvatar) {
+        welcomeMsgAvatar.innerHTML = getPersonaAvatarSVG(persona);
       }
 
       if (persona === 'ultron') {
@@ -426,10 +430,6 @@ if (document.readyState === 'loading') {
 
         if (chatInput) chatInput.placeholder = 'Ask ULTRON...';
         if (welcomeSender) welcomeSender.textContent = 'ULTRON';
-        if (welcomeAvatarIcon) {
-          welcomeAvatarIcon.setAttribute('data-lucide', 'zap');
-          safeCreateIcons();
-        }
         if (emblemJarvis) emblemJarvis.style.opacity = '0';
         if (emblemUltron) emblemUltron.style.opacity = '1';
       } else {
@@ -438,10 +438,6 @@ if (document.readyState === 'loading') {
 
         if (chatInput) chatInput.placeholder = 'Ask JARVIS...';
         if (welcomeSender) welcomeSender.textContent = 'JARVIS';
-        if (welcomeAvatarIcon) {
-          welcomeAvatarIcon.setAttribute('data-lucide', 'cpu');
-          safeCreateIcons();
-        }
         if (emblemJarvis) emblemJarvis.style.opacity = '1';
         if (emblemUltron) emblemUltron.style.opacity = '0';
       }
@@ -600,12 +596,87 @@ if (document.readyState === 'loading') {
       throw new Error(`Engine request failed: ${lastErrorMessage}. Click CONFIG ➔ "GET FREE KEY" to verify key.`);
     }
 
+    /* Custom Pure Graphical Sci-Fi Avatar SVG Generators (No Letters/Text) */
+    function getPersonaAvatarSVG(persona) {
+      const idSuffix = Math.random().toString(36).substring(2, 7);
+      if (persona === 'ultron') {
+        return `
+          <svg class="chat-avatar-svg ultron-avatar" viewBox="0 0 36 36" width="32" height="32">
+            <defs>
+              <radialGradient id="ultron-avatar-grad-${idSuffix}" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#ffffff" />
+                <stop offset="35%" stop-color="#ff003c" />
+                <stop offset="75%" stop-color="#800014" />
+                <stop offset="100%" stop-color="#150306" stop-opacity="0.9" />
+              </radialGradient>
+              <filter id="ultron-avatar-glow-${idSuffix}" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="1.5" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+            </defs>
+            <polygon points="18 2, 31 7.4, 34 20, 27 32, 9 32, 2 20, 5 7.4" fill="none" stroke="#ff003c" stroke-width="1.5" stroke-dasharray="4 2" opacity="0.9" />
+            <polygon points="18 5, 29 9.5, 31 20, 25 29.5, 11 29.5, 5 20, 7 9.5" fill="none" stroke="#ff5500" stroke-width="1" opacity="0.6" />
+            <line x1="7" y1="9.5" x2="13" y2="14.5" stroke="#ff003c" stroke-width="1.2" />
+            <line x1="29" y1="9.5" x2="23" y2="14.5" stroke="#ff003c" stroke-width="1.2" />
+            <line x1="7" y1="26.5" x2="13" y2="21.5" stroke="#ff003c" stroke-width="1.2" />
+            <line x1="29" y1="26.5" x2="23" y2="21.5" stroke="#ff003c" stroke-width="1.2" />
+            <polygon points="18 10, 27 15, 22 22, 14 22, 9 15" fill="none" stroke="#ff003c" stroke-width="1.5" />
+            <polygon points="11 15, 16 17, 13 20" fill="#ff003c" />
+            <polygon points="25 15, 20 17, 23 20" fill="#ff003c" />
+            <circle cx="18" cy="18" r="4.5" fill="url(#ultron-avatar-grad-${idSuffix})" filter="url(#ultron-avatar-glow-${idSuffix})" />
+            <circle cx="18" cy="18" r="1.5" fill="#ffffff" />
+          </svg>
+        `;
+      } else {
+        return `
+          <svg class="chat-avatar-svg jarvis-avatar" viewBox="0 0 36 36" width="32" height="32">
+            <defs>
+              <radialGradient id="jarvis-avatar-grad-${idSuffix}" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#ffffff" />
+                <stop offset="35%" stop-color="#00f0ff" />
+                <stop offset="70%" stop-color="#0055ff" />
+                <stop offset="100%" stop-color="#070b14" stop-opacity="0.8" />
+              </radialGradient>
+              <filter id="jarvis-avatar-glow-${idSuffix}" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="1.5" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+            </defs>
+            <circle cx="18" cy="18" r="16.5" fill="none" stroke="#00d2ff" stroke-width="1.2" stroke-dasharray="3 1.5" opacity="0.9" />
+            <circle cx="18" cy="18" r="14" fill="none" stroke="#0055ff" stroke-width="1" />
+            <line x1="18" y1="2" x2="18" y2="7" stroke="#00f0ff" stroke-width="1.5" stroke-linecap="round" />
+            <line x1="18" y1="29" x2="18" y2="34" stroke="#00f0ff" stroke-width="1.5" stroke-linecap="round" />
+            <line x1="4.1" y1="10" x2="8.5" y2="12.5" stroke="#00f0ff" stroke-width="1.5" stroke-linecap="round" />
+            <line x1="27.5" y1="23.5" x2="31.9" y2="26" stroke="#00f0ff" stroke-width="1.5" stroke-linecap="round" />
+            <line x1="4.1" y1="26" x2="8.5" y2="23.5" stroke="#00f0ff" stroke-width="1.5" stroke-linecap="round" />
+            <line x1="27.5" y1="12.5" x2="31.9" y2="10" stroke="#00f0ff" stroke-width="1.5" stroke-linecap="round" />
+            <polygon points="18 7, 27.5 23.5, 8.5 23.5" fill="none" stroke="#00f0ff" stroke-width="1.2" opacity="0.85" />
+            <polygon points="18 29, 8.5 12.5, 27.5 12.5" fill="none" stroke="#0055ff" stroke-width="1.2" opacity="0.85" />
+            <circle cx="18" cy="18" r="9" fill="none" stroke="#00f0ff" stroke-width="1" stroke-dasharray="4 2" />
+            <circle cx="18" cy="18" r="5.5" fill="url(#jarvis-avatar-grad-${idSuffix})" filter="url(#jarvis-avatar-glow-${idSuffix})" />
+            <circle cx="18" cy="18" r="2" fill="#ffffff" />
+          </svg>
+        `;
+      }
+    }
+
+    function getUserAvatarSVG() {
+      return `
+        <svg class="chat-avatar-svg user-avatar" viewBox="0 0 36 36" width="32" height="32">
+          <circle cx="18" cy="18" r="16" fill="none" stroke="var(--color-secondary)" stroke-width="1.2" stroke-dasharray="6 3" opacity="0.8" />
+          <circle cx="18" cy="18" r="13" fill="none" stroke="var(--color-text-dim)" stroke-width="1" />
+          <circle cx="18" cy="13" r="4.5" fill="none" stroke="var(--color-secondary)" stroke-width="1.5" />
+          <path d="M 8 28 C 8 22, 13 20, 18 20 C 23 20, 28 22, 28 28" fill="none" stroke="var(--color-secondary)" stroke-width="1.5" stroke-linecap="round" />
+        </svg>
+      `;
+    }
+
     /* Message Rendering Utilities */
     function appendUserMessage(text) {
       const msgRow = document.createElement('div');
       msgRow.className = 'message-row user-msg';
       msgRow.innerHTML = `
-        <div class="msg-avatar"><i data-lucide="user"></i></div>
+        <div class="msg-avatar">${getUserAvatarSVG()}</div>
         <div class="msg-bubble glow-flash">
           <div class="msg-header">
             <span class="msg-sender">OPERATOR</span>
@@ -629,7 +700,7 @@ if (document.readyState === 'loading') {
       const senderName = state.persona.toUpperCase();
 
       msgRow.innerHTML = `
-        <div class="msg-avatar"><i data-lucide="${state.persona === 'ultron' ? 'zap' : 'cpu'}"></i></div>
+        <div class="msg-avatar">${getPersonaAvatarSVG(state.persona)}</div>
         <div class="msg-bubble glow-flash">
           <div class="msg-header">
             <span class="msg-sender">${senderName}</span>
@@ -703,7 +774,7 @@ if (document.readyState === 'loading') {
         thinkingMsgRow = document.createElement('div');
         thinkingMsgRow.className = 'message-row ai-msg';
         thinkingMsgRow.innerHTML = `
-          <div class="msg-avatar"><i data-lucide="${state.persona === 'ultron' ? 'zap' : 'cpu'}"></i></div>
+          <div class="msg-avatar">${getPersonaAvatarSVG(state.persona)}</div>
           <div class="msg-bubble">
             <div class="thinking-dots">
               <div class="dot"></div><div class="dot"></div><div class="dot"></div>
