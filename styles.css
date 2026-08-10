@@ -159,14 +159,15 @@
     }
     .brand-title {
       font-family: var(--font-title);
-      font-weight: 900;
-      font-size: 1.6rem;
-      letter-spacing: 3px;
-      color: #ffffff;
-      text-shadow: 0 0 10px var(--color-primary);
+      font-weight: 600;
+      font-size: 1.1rem;
+      letter-spacing: 4px;
+      color: var(--color-text);
+      text-shadow: none;
       display: flex;
       align-items: center;
       gap: 8px;
+      opacity: 0.85;
     }
     .brand-title span {
       color: var(--color-primary);
