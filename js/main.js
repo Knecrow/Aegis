@@ -385,8 +385,9 @@ requestAnimationFrame(renderCanvas);
    THEME & PERSONA TOGGLE ENGINE (JARVIS ↔ ULTRON)
    ========================================================================== */
 personaToggle.addEventListener('click', () => {
-  soundFx.toggle();
-  setPersona(state.persona === 'jarvis' ? 'ultron' : 'jarvis');
+  const nextPersona = state.persona === 'jarvis' ? 'ultron' : 'jarvis';
+  soundFx.toggle(nextPersona);
+  setPersona(nextPersona);
 });
 
 function setPersona(persona) {

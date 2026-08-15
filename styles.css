@@ -252,10 +252,11 @@ body.theme-ultron .hud-overlay {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(0, 0, 0, 0.35);
-  padding: 4px 8px;
-  border-radius: 30px;
-  border: 1px solid var(--color-glass-border);
+  background: rgba(4, 9, 18, 0.7);
+  padding: 3px 8px;
+  border-radius: 24px;
+  border: 1px solid rgba(var(--color-primary-rgb), 0.22);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8), 0 0 10px rgba(var(--color-primary-rgb), 0.08);
   transition: var(--theme-transition);
 }
 
@@ -267,19 +268,38 @@ body.theme-ultron .hud-overlay {
   cursor: pointer;
   transition: var(--theme-transition);
 }
-.persona-label.jarvis-label { color: rgba(0, 210, 255, 0.65); }
-.persona-label.ultron-label { color: rgba(255, 0, 60,  0.65); }
+.persona-label.jarvis-label { color: rgba(0, 210, 255, 0.75); text-shadow: 0 0 8px rgba(0, 210, 255, 0.4); }
+.persona-label.ultron-label { color: rgba(255, 0, 60,  0.75); text-shadow: 0 0 8px rgba(255, 0, 60,  0.4); }
 
-/* Toggle Switch */
+/* Modern Mechanical Electric Switch */
 .toggle-switch {
   position: relative;
-  width: 44px;
+  width: 46px;
   height: 22px;
-  background: rgba(0, 0, 0, 0.55);
+  background: linear-gradient(180deg, #02050a 0%, #0d1624 100%);
   border-radius: 11px;
-  border: 1px solid var(--color-glass-border);
+  border: 1px solid rgba(var(--color-primary-rgb), 0.35);
   cursor: pointer;
-  transition: border-color 1.8s ease;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.9), 0 0 12px rgba(var(--color-primary-rgb), 0.15);
+  transition: border-color 0.4s ease, box-shadow 0.4s ease;
+  overflow: hidden;
+}
+.toggle-switch::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 6px;
+  right: 6px;
+  height: 2px;
+  background: repeating-linear-gradient(90deg, rgba(var(--color-primary-rgb), 0.4) 0px, rgba(var(--color-primary-rgb), 0.4) 3px, transparent 3px, transparent 6px);
+  transform: translateY(-50%);
+  pointer-events: none;
+  opacity: 0.7;
+  transition: background 1.8s ease;
+}
+.toggle-switch:hover {
+  border-color: var(--color-primary);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.9), 0 0 16px rgba(var(--color-primary-rgb), 0.4);
 }
 .toggle-thumb {
   position: absolute;
@@ -288,12 +308,15 @@ body.theme-ultron .hud-overlay {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: var(--color-primary);
-  box-shadow: 0 0 10px var(--color-primary);
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), background 1.8s ease, box-shadow 1.8s ease;
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, var(--color-primary) 65%, #003a66 100%);
+  box-shadow: 0 0 12px var(--color-primary), 0 0 4px #ffffff, inset 0 -1px 2px rgba(0, 0, 0, 0.6);
+  transition: transform 0.32s cubic-bezier(0.2, 1.4, 0.4, 1), background 0.3s ease, box-shadow 0.3s ease;
+  z-index: 2;
 }
 body.theme-ultron .toggle-thumb {
-  transform: translateX(22px);
+  transform: translateX(24px);
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #ff003c 65%, #660010 100%);
+  box-shadow: 0 0 14px #ff003c, 0 0 4px #ffffff, inset 0 -1px 2px rgba(0, 0, 0, 0.6);
 }
 
 /* HUD Action Button */
