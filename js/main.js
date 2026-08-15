@@ -996,3 +996,20 @@ const welcomeTextInit = document.getElementById('welcome-text');
 if (welcomeTextInit) {
   welcomeTextInit.textContent = getRandomQuote(state.persona);
 }
+
+/* ==========================================================================
+   LIVE HUD CLOCK
+   ========================================================================== */
+const hudClock = document.getElementById('hud-clock');
+if (hudClock) {
+  const updateClock = () => {
+    hudClock.textContent = new Date().toLocaleTimeString('en-US', {
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+  };
+  updateClock();
+  setInterval(updateClock, 1000);
+}
