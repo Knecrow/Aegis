@@ -93,16 +93,30 @@ const ring2 = document.getElementById('ring-2');
 const ring3 = document.getElementById('ring-3');
 
 /* ==========================================================================
-   CANVAS BACKGROUND ENGINE (Hexagonal Grid + Reactive Nanotech Swarm)
+   LIVING CONSCIOUSNESS & CANVAS ENGINE
    ========================================================================== */
 const canvas = document.getElementById('hud-canvas');
 const ctx = canvas.getContext('2d');
+const avatarCoreEl = avatarWidget ? avatarWidget.querySelector('.avatar-core') : null;
+
 let swarmBots = [];
 let animationFrameId;
 let fpsCounter = 0;
 let lastFpsTime = performance.now();
 let mouseX = window.innerWidth / 2;
 let mouseY = window.innerHeight / 2;
+
+// 3D Look-At Gaze Tracking State
+let gazeRotateX = 0;
+let gazeRotateY = 0;
+
+// Living Consciousness Telemetry & Idle Blip State
+let lastActivityTime = performance.now();
+let nextBlipTime = performance.now() + 7000;
+let activeTelemetryArcs = [];
+let vocalShockwaves = [];
+let vocalEnergy = 0; // Dynamic vocal amplitude (0.0 to 1.0)
+
 let shockwaveActive = false;
 let shockwaveRadius = 0;
 let shockwaveOrigin = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
@@ -116,6 +130,7 @@ let targetThemeColorProgress = 0;
 window.addEventListener('mousemove', (e) => {
   mouseX = e.clientX;
   mouseY = e.clientY;
+  lastActivityTime = performance.now();
 });
 
 function resizeCanvas() {
@@ -133,7 +148,7 @@ function lerpColorRGB(r1, g1, b1, r2, g2, b2, t) {
   };
 }
 
-/* Nanotech Swarm Bot — Physics & Rendering Unit */
+/* Nanotech Swarm Bot — Persona-Aware Physics & Bio-Reactivity */
 class SwarmBot {
   constructor(index) {
     this.index = index;
@@ -146,7 +161,7 @@ class SwarmBot {
     this.vx = (Math.random() - 0.5) * 0.4;
     this.vy = (Math.random() - 0.5) * 0.4;
     this.radius = Math.random() * 2 + 1.2;
-    this.baseOrbitRadius = Math.random() * 150 + 70;
+    this.baseOrbitRadius = Math.random() * 140 + 75;
     this.targetOrbitRadius = this.baseOrbitRadius;
     this.orbitRadius = this.baseOrbitRadius;
     this.orbitAngle = Math.random() * Math.PI * 2;
@@ -162,12 +177,19 @@ class SwarmBot {
       ? Math.sin(now * 0.015 + this.index * 0.25) * 0.5 + 0.5
       : 0;
 
-    this.targetOrbitRadius = this.baseOrbitRadius + talkPulse * 45;
+    // Expand orbit with vocal bio-energy and speech rhythm
+    this.targetOrbitRadius = this.baseOrbitRadius + talkPulse * 45 + vocalEnergy * 35;
     this.orbitRadius += (this.targetOrbitRadius - this.orbitRadius) * 0.1;
 
-    const currentOrbitSpeed = isTalking
-      ? this.orbitSpeed * (2.2 + talkPulse * 1.5)
+    let currentOrbitSpeed = isTalking
+      ? this.orbitSpeed * (2.2 + talkPulse * 1.5 + vocalEnergy * 1.2)
       : this.orbitSpeed;
+    
+    // Ultron: Aggressive sudden speed bursts; Jarvis: smooth harmonic flow
+    if (state.persona === 'ultron') {
+      if (Math.random() < 0.04) currentOrbitSpeed *= 1.8;
+    }
+
     this.orbitAngle += currentOrbitSpeed * (state.particlesSpeed || 1.0);
 
     const desiredX = targetX + Math.cos(this.orbitAngle) * this.orbitRadius;
@@ -176,19 +198,33 @@ class SwarmBot {
     let steerX = (desiredX - this.x) * 0.01;
     let steerY = (desiredY - this.y) * 0.01;
 
+    // Mouse attraction influence
     const mdx = mouseX - this.x;
     const mdy = mouseY - this.y;
     const mdist = Math.hypot(mdx, mdy);
-    if (mdist < 200) {
-      steerX += (mdx / mdist) * 0.06;
-      steerY += (mdy / mdist) * 0.06;
+    if (mdist < 220) {
+      steerX += (mdx / mdist) * 0.07;
+      steerY += (mdy / mdist) * 0.07;
+    }
+
+    // Persona-specific movement behavior
+    if (state.persona === 'ultron') {
+      // Erratic micro-twitches
+      if (Math.random() < 0.06) {
+        steerX += (Math.random() - 0.5) * 0.4;
+        steerY += (Math.random() - 0.5) * 0.4;
+      }
+    } else {
+      // Jarvis: Gentle fluid harmonic oscillations
+      steerX += Math.sin(now * 0.002 + this.index) * 0.01;
+      steerY += Math.cos(now * 0.002 + this.index) * 0.01;
     }
 
     this.vx = (this.vx + steerX) * 0.96;
     this.vy = (this.vy + steerY) * 0.96;
 
     const speed = Math.hypot(this.vx, this.vy);
-    const maxSpeed = isTalking ? 3.0 : 1.4;
+    const maxSpeed = isTalking ? 3.4 : 1.5;
     if (speed > maxSpeed) {
       this.vx = (this.vx / speed) * maxSpeed;
       this.vy = (this.vy / speed) * maxSpeed;
@@ -197,7 +233,7 @@ class SwarmBot {
     this.x += this.vx;
     this.y += this.vy;
 
-    this.currentAlpha = Math.min(1.0, this.alpha + talkPulse * 0.4);
+    this.currentAlpha = Math.min(1.0, this.alpha + talkPulse * 0.4 + vocalEnergy * 0.3);
     this.glowBlur = isTalking ? 16 : 8;
 
     // Screen boundary wrapping
@@ -211,14 +247,13 @@ class SwarmBot {
     ctx.save();
     ctx.beginPath();
 
-    // Interpolate between JARVIS Cyan (0,210,255) and ULTRON Crimson (255,0,60)
     const rgb = lerpColorRGB(0, 210, 255, 255, 0, 60, themeColorProgress);
 
     if (themeColorProgress > 0.5) {
-      // Ultron: crimson diamond squares
+      // Ultron: Crimson diamond lattice polygons
       ctx.rect(this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2);
     } else {
-      // JARVIS: glowing spheres
+      // JARVIS: Glowing harmonic spheres
       ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
     }
 
@@ -255,9 +290,24 @@ function burstParticles() {
   });
 }
 
+/** Trigger subtle vocal micro-shockwave */
+function triggerVocalMicroShockwave(ox, oy) {
+  if (vocalShockwaves.length < 5) {
+    vocalShockwaves.push({
+      x: ox,
+      y: oy,
+      radius: 50,
+      speed: Math.random() * 3 + 4,
+      alpha: 0.65,
+    });
+  }
+}
+
 /** Reactive ripple disturbance on keystroke */
 function triggerTypingRipple() {
   typingRippleActive = true;
+  lastActivityTime = performance.now();
+  vocalEnergy = Math.min(1.0, vocalEnergy + 0.3);
   const inputRect = chatInput.getBoundingClientRect();
   typingRippleOrigin = {
     x: inputRect.left + inputRect.width / 2,
@@ -277,7 +327,7 @@ function triggerTypingRipple() {
 function drawSwarmMesh() {
   ctx.save();
   const isTalking = state.isSpeaking || state.isTypewriting || state.isThinking;
-  const maxConnectDist = isTalking ? 100 : 80;
+  const maxConnectDist = isTalking ? 105 : 82;
   const rgb = lerpColorRGB(0, 210, 255, 255, 0, 60, themeColorProgress);
   ctx.lineWidth = isTalking ? 0.9 : 0.6;
 
@@ -287,7 +337,7 @@ function drawSwarmMesh() {
       const b2 = swarmBots[j];
       const dist = Math.hypot(b2.x - b1.x, b2.y - b1.y);
       if (dist < maxConnectDist) {
-        const alpha = (1 - dist / maxConnectDist) * (isTalking ? 0.55 : 0.35);
+        const alpha = (1 - dist / maxConnectDist) * (isTalking ? 0.58 : 0.32);
         ctx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
         ctx.beginPath();
         ctx.moveTo(b1.x, b1.y);
@@ -367,6 +417,143 @@ function renderCanvas(now) {
   const targetX = avatarRect.left + avatarRect.width / 2 || canvas.width / 2;
   const targetY = avatarRect.top + avatarRect.height / 2 || canvas.height / 2;
 
+  // 1. 3D LOOK-AT GAZE TRACKING (Avatar tilts & follows cursor smoothly)
+  const dx = mouseX - targetX;
+  const dy = mouseY - targetY;
+  const targetRotY = Math.max(-13, Math.min(13, (dx / window.innerWidth) * 26));
+  const targetRotX = Math.max(-13, Math.min(13, -(dy / window.innerHeight) * 26));
+  gazeRotateX += (targetRotX - gazeRotateX) * 0.08;
+  gazeRotateY += (targetRotY - gazeRotateY) * 0.08;
+
+  // 2. LIVING CONSCIOUSNESS HEARTBEAT PULSE
+  let heartbeat = 0;
+  if (state.persona === 'jarvis') {
+    // Smooth dual-lobe organic breath
+    heartbeat = Math.sin(now * 0.0022) * 0.032 + Math.sin(now * 0.0044) * 0.014;
+  } else {
+    // Ultron: Tense systolic contraction with occasional twitch
+    const pulsePhase = (now * 0.003) % (Math.PI * 2);
+    const systolic = Math.pow(Math.sin(pulsePhase), 4);
+    heartbeat = systolic * 0.05 + (Math.random() < 0.025 ? (Math.random() - 0.5) * 0.03 : 0);
+  }
+
+  // Decay vocal bio-energy smoothly
+  vocalEnergy *= 0.93;
+  if (vocalEnergy < 0.001) vocalEnergy = 0;
+
+  // Apply 3D gaze and living pulse to the central avatar orb
+  if (avatarCoreEl) {
+    const scale = 1.0 + heartbeat + vocalEnergy * 0.12;
+    avatarCoreEl.style.transform = `perspective(600px) rotateX(${gazeRotateX.toFixed(2)}deg) rotateY(${gazeRotateY.toFixed(2)}deg) scale(${scale.toFixed(3)})`;
+  }
+
+  // 3. SPONTANEOUS IDLE TELEMETRY BLIPS (Flares for Jarvis, lightning sparks for Ultron)
+  if (now > nextBlipTime && !state.isSpeaking && !state.isThinking && !state.isTypewriting) {
+    nextBlipTime = now + (Math.random() * 6000 + 8000); // 8-14s interval
+    if (state.persona === 'jarvis') {
+      activeTelemetryArcs.push({
+        type: 'jarvis_flare',
+        cx: targetX,
+        cy: targetY,
+        radius: 86,
+        startAngle: Math.random() * Math.PI * 2,
+        arcLength: 0.85,
+        progress: 0,
+        speed: 0.028,
+        alpha: 1.0,
+      });
+      if (avatarCoreEl) {
+        avatarCoreEl.classList.add('flare-active');
+        setTimeout(() => avatarCoreEl && avatarCoreEl.classList.remove('flare-active'), 400);
+      }
+    } else {
+      const sparkBranches = [];
+      const baseAngle = Math.random() * Math.PI * 2;
+      for (let s = 0; s < 3; s++) {
+        const points = [
+          {
+            x: targetX + Math.cos(baseAngle + s * 0.5) * 44,
+            y: targetY + Math.sin(baseAngle + s * 0.5) * 44,
+          },
+        ];
+        let curX = points[0].x;
+        let curY = points[0].y;
+        for (let step = 0; step < 4; step++) {
+          curX += Math.cos(baseAngle + s * 0.5 + (Math.random() - 0.5) * 0.9) * 22;
+          curY += Math.sin(baseAngle + s * 0.5 + (Math.random() - 0.5) * 0.9) * 22;
+          points.push({ x: curX, y: curY });
+        }
+        sparkBranches.push(points);
+      }
+      activeTelemetryArcs.push({
+        type: 'ultron_spark',
+        branches: sparkBranches,
+        alpha: 1.0,
+        decay: 0.045,
+      });
+      if (avatarCoreEl) {
+        avatarCoreEl.classList.add('glitch-active');
+        setTimeout(() => avatarCoreEl && avatarCoreEl.classList.remove('glitch-active'), 180);
+      }
+    }
+  }
+
+  // Draw active telemetry flares and lightning arcs
+  for (let i = activeTelemetryArcs.length - 1; i >= 0; i--) {
+    const arc = activeTelemetryArcs[i];
+    if (arc.type === 'jarvis_flare') {
+      arc.progress += arc.speed;
+      arc.alpha -= 0.016;
+      ctx.save();
+      ctx.beginPath();
+      const currentStart = arc.startAngle + arc.progress * Math.PI * 2;
+      ctx.arc(arc.cx, arc.cy, arc.radius, currentStart, currentStart + arc.arcLength);
+      ctx.strokeStyle = `rgba(0, 210, 255, ${Math.max(0, arc.alpha)})`;
+      ctx.lineWidth = 2.5;
+      ctx.shadowColor = '#00ffff';
+      ctx.shadowBlur = 14;
+      ctx.stroke();
+      ctx.restore();
+      if (arc.alpha <= 0 || arc.progress >= 1.0) activeTelemetryArcs.splice(i, 1);
+    } else if (arc.type === 'ultron_spark') {
+      arc.alpha -= arc.decay;
+      ctx.save();
+      ctx.strokeStyle = `rgba(255, 0, 60, ${Math.max(0, arc.alpha)})`;
+      ctx.lineWidth = 1.8;
+      ctx.shadowColor = '#ff003c';
+      ctx.shadowBlur = 16;
+      arc.branches.forEach((branch) => {
+        ctx.beginPath();
+        branch.forEach((pt, pIdx) => {
+          if (pIdx === 0) ctx.moveTo(pt.x, pt.y);
+          else ctx.lineTo(pt.x + (Math.random() - 0.5) * 2, pt.y + (Math.random() - 0.5) * 2);
+        });
+        ctx.stroke();
+      });
+      ctx.restore();
+      if (arc.alpha <= 0) activeTelemetryArcs.splice(i, 1);
+    }
+  }
+
+  // Draw vocal bio-shockwaves
+  for (let v = vocalShockwaves.length - 1; v >= 0; v--) {
+    const vWave = vocalShockwaves[v];
+    vWave.radius += vWave.speed;
+    vWave.alpha -= 0.035;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(vWave.x, vWave.y, vWave.radius, 0, Math.PI * 2);
+    const rgb = lerpColorRGB(0, 210, 255, 255, 0, 60, themeColorProgress);
+    ctx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${Math.max(0, vWave.alpha)})`;
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+    ctx.shadowBlur = 8;
+    ctx.stroke();
+    ctx.restore();
+    if (vWave.alpha <= 0) vocalShockwaves.splice(v, 1);
+  }
+
+  // Update and draw Nanotech Swarm Bots
   swarmBots.forEach((bot) => {
     bot.update(targetX, targetY, now);
     bot.draw();
@@ -668,6 +855,11 @@ function runTypewriter(container, text, callback) {
     if (index < text.length) {
       cursor.before(text.charAt(index));
       index++;
+      vocalEnergy = Math.min(1.0, vocalEnergy + 0.3);
+      if (Math.random() < 0.12 && avatarWidget) {
+        const r = avatarWidget.getBoundingClientRect();
+        triggerVocalMicroShockwave(r.left + r.width / 2, r.top + r.height / 2);
+      }
       scrollChatToBottom();
     } else {
       clearInterval(interval);
@@ -874,6 +1066,16 @@ function speakResponse(text) {
     state.isSpeaking = true;
     avatarWidget.classList.add('speaking');
   };
+
+  utterance.onboundary = (event) => {
+    // Pulse bio-energy on each spoken word / syllable boundary
+    vocalEnergy = 1.0;
+    if (avatarWidget) {
+      const r = avatarWidget.getBoundingClientRect();
+      triggerVocalMicroShockwave(r.left + r.width / 2, r.top + r.height / 2);
+    }
+  };
+
   utterance.onend = () => {
     state.isSpeaking = false;
     if (!state.isTypewriting) avatarWidget.classList.remove('speaking');

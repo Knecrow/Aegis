@@ -300,6 +300,8 @@ body.theme-ultron .toggle-thumb {
   display: flex;
   align-items: center;
   justify-content: center;
+  perspective: 800px;
+  transform-style: preserve-3d;
 }
 
 /* Outer rotating hex ring */
@@ -315,6 +317,7 @@ body.theme-ultron .toggle-thumb {
   transition: var(--theme-transition);
   will-change: transform;
   opacity: 0.65;
+  pointer-events: none;
 }
 
 /* Inner counter-rotating ring */
@@ -329,6 +332,7 @@ body.theme-ultron .toggle-thumb {
   transition: var(--theme-transition);
   will-change: transform;
   opacity: 0.45;
+  pointer-events: none;
 }
 
 /* Extra dashed micro-ring via pseudo-element */
@@ -346,14 +350,17 @@ body.theme-ultron .toggle-thumb {
 
 /* State: Thinking */
 .avatar-widget.thinking .hex-ring {
-  animation: hexSpin 3s linear infinite;
+  animation: hexSpin 2.4s linear infinite;
   stroke: #ffffff;
   filter: drop-shadow(0 0 24px var(--color-primary));
   opacity: 1;
 }
+body.theme-ultron .avatar-widget.thinking .hex-ring {
+  animation: ultronChaosSpin 1.8s steps(12, end) infinite;
+}
 /* State: Speaking */
 .avatar-widget.speaking .hex-ring-inner {
-  animation: hexSpinReverse 3.5s linear infinite;
+  animation: hexSpinReverse 3.2s linear infinite;
   stroke: #ffffff;
   opacity: 1;
 }
@@ -362,7 +369,7 @@ body.theme-ultron .toggle-thumb {
   box-shadow: inset 0 0 30px rgba(var(--color-primary-rgb), 0.4), var(--glow-strong);
 }
 
-/* Core Avatar Orb */
+/* Core Avatar Orb with 3D eye tracking and breathing */
 .avatar-core {
   width: 112px;
   height: 112px;
@@ -376,12 +383,27 @@ body.theme-ultron .toggle-thumb {
     inset 0 0 22px rgba(var(--color-primary-rgb), 0.12),
     var(--glow-subtle);
   z-index: 5;
-  transition: var(--theme-transition);
+  transition: border-color 1.8s ease, background 1.8s ease, box-shadow 0.3s ease;
   position: relative;
+  will-change: transform, box-shadow;
+  transform-style: preserve-3d;
 }
 body.theme-ultron .avatar-core {
   background: radial-gradient(circle, rgba(255, 0, 60, 0.18) 0%, rgba(8, 2, 4, 0.98) 68%);
   border-color: rgba(255, 0, 60, 0.3);
+}
+
+/* Living Telemetry Blip Effects */
+.avatar-core.flare-active {
+  box-shadow: inset 0 0 35px rgba(0, 210, 255, 0.6), 0 0 35px rgba(0, 210, 255, 0.7);
+  border-color: #ffffff;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.avatar-core.glitch-active {
+  box-shadow: inset 0 0 35px rgba(255, 0, 60, 0.8), 0 0 40px rgba(255, 0, 60, 0.9);
+  filter: drop-shadow(3px 0 #ff003c) drop-shadow(-3px 0 #00ffff);
+  transform: translate3d((Math.random() - 0.5) * 4px, 0, 0);
+  transition: filter 0.05s linear;
 }
 
 .core-emblem-svg {
@@ -406,6 +428,13 @@ body.theme-ultron .avatar-core {
 /* Avatar Keyframes */
 @keyframes hexSpin        { to { transform: rotate(360deg);  } }
 @keyframes hexSpinReverse { to { transform: rotate(-360deg); } }
+@keyframes ultronChaosSpin {
+  0%   { transform: rotate(0deg);   }
+  25%  { transform: rotate(110deg); }
+  50%  { transform: rotate(160deg); }
+  75%  { transform: rotate(290deg); }
+  100% { transform: rotate(360deg); }
+}
 @keyframes emblemPulse {
   0%   { transform: scale(0.93); opacity: 0.8; }
   100% { transform: scale(1.08); opacity: 1;   }
