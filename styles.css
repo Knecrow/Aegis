@@ -141,24 +141,11 @@ body.theme-ultron .hud-overlay {
    ========================================================================== */
 .hud-header {
   background: transparent;
-  padding: 6px 2px 14px;
+  padding: 6px 2px 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   position: relative;
-  transition: var(--theme-transition);
-  border-bottom: 1px solid var(--color-glass-border);
-}
-
-/* Gradient underline accent — left side glow */
-.hud-header::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  width: 35%;
-  height: 1px;
-  background: linear-gradient(90deg, var(--color-primary) 0%, transparent 100%);
   transition: var(--theme-transition);
 }
 
