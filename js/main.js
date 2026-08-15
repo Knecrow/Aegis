@@ -386,7 +386,6 @@ requestAnimationFrame(renderCanvas);
    ========================================================================== */
 personaToggle.addEventListener('click', () => {
   const nextPersona = state.persona === 'jarvis' ? 'ultron' : 'jarvis';
-  soundFx.toggle(nextPersona);
   setPersona(nextPersona);
 });
 
