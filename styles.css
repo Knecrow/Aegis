@@ -67,22 +67,6 @@ body {
   transition: background-color 1.8s ease-in-out, color 1.8s ease-in-out;
 }
 
-/* Subtle CRT scanline texture over everything */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.022) 2px,
-    rgba(0, 0, 0, 0.022) 4px
-  );
-  pointer-events: none;
-  z-index: 9999;
-}
-
 /* Custom Scrollbar */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -151,20 +135,6 @@ body.theme-ultron .hud-overlay {
   padding: 18px 20px;
   gap: 10px;
 }
-
-/* Corner bracket HUD decorations */
-.corner-tl, .corner-tr, .corner-bl, .corner-br {
-  position: absolute;
-  width: 18px;
-  height: 18px;
-  transition: border-color 1.8s ease;
-  z-index: 1;
-  pointer-events: none;
-}
-.corner-tl { top: 7px;  left: 7px;  border-top: 1.5px solid var(--color-primary); border-left: 1.5px solid var(--color-primary);   border-radius: 2px 0 0 0; }
-.corner-tr { top: 7px;  right: 7px; border-top: 1.5px solid var(--color-primary); border-right: 1.5px solid var(--color-primary);  border-radius: 0 2px 0 0; }
-.corner-bl { bottom: 7px; left: 7px;  border-bottom: 1.5px solid var(--color-primary); border-left: 1.5px solid var(--color-primary);  border-radius: 0 0 0 2px; }
-.corner-br { bottom: 7px; right: 7px; border-bottom: 1.5px solid var(--color-primary); border-right: 1.5px solid var(--color-primary); border-radius: 0 0 2px 0; }
 
 /* ==========================================================================
    5. HEADER HUD
@@ -1235,7 +1205,6 @@ body.theme-ultron .avatar-core {
 @media (max-width: 900px) {
   body { overflow-y: auto; overflow-x: hidden; }
   .app-container { padding: 10px; gap: 8px; height: auto; min-height: 100vh; }
-  .corner-tl, .corner-tr, .corner-bl, .corner-br { display: none; }
   .main-content { flex-direction: column; height: auto; }
   .avatar-sidebar { width: 100%; padding: 6px; flex-direction: row; }
   .avatar-widget { width: 86px; height: 86px; }
