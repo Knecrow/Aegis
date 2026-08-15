@@ -49,7 +49,7 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      user-select: none;
+      user-select: none; /* default: non-interactive elements are non-selectable */
     }
 
     body {
@@ -632,6 +632,8 @@
     .msg-text {
       white-space: pre-wrap;
       word-break: break-word;
+      user-select: text;   /* allow users to select & copy chat content */
+      cursor: text;
     }
 
     /* Typewriter Cursor Indicator */
@@ -761,6 +763,7 @@
       font-family: var(--font-mono);
       font-size: 0.9rem;
       outline: none;
+      user-select: text;  /* ensure text input is always selectable */
     }
     .chat-input:focus {
       outline: none;
