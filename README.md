@@ -70,3 +70,4 @@ Then navigate to `http://localhost:8000` in your browser.
 
 ## 📄 License
 Distributed under the MIT License. See `LICENSE` for details.
+<!-- yolo achievement trigger -->
